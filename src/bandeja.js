@@ -1,9 +1,10 @@
 import './acceso.css';
-import './bandeja.css';
+import './panel.css';
 import { sb, exigirSesion, salir } from './lib/acceso.js';
+import { pintarRiel, actualizarContadores } from './lib/riel.js';
+import { esc, usarClientes, claveCliente, avatar, chipsClientes } from './lib/clientes.js';
 
 const $ = id => document.getElementById(id);
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const TZ = 'America/Santiago';
 
 const ACCION = {
@@ -30,21 +31,6 @@ const filtro = (() => {
   catch { return { cliente: '', tipo: '', plat: '', fecha: '' }; }
 })();
 function guardarFiltros() { try { localStorage.setItem(CLAVE_FILTROS, JSON.stringify(filtro)); } catch { /* sin almacenamiento */ } }
-// Un mismo cliente puede venir escrito distinto («Mamba Sport» y «Mamba Sport Chile»,
-// «Krat» y «KRAT Inmobiliaria»): se une al cliente de Noise cuyo nombre empieza igual.
-const normal = n => String(n || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
-const cacheClave = new Map();
-function claveCliente(n) {
-  const x = normal(n); if (!x) return '';
-  if (cacheClave.has(x)) return cacheClave.get(x);
-  const nombres = (estado.datos?.clientes || []).map(c => normal(c.nombre));
-  const igual = nombres.find(c => c === x)
-    || nombres.find(c => c.startsWith(x + ' ') || x.startsWith(c + ' '))
-    || (() => { const p = x.split(' ')[0]; const m = nombres.filter(c => c.split(' ')[0] === p); return m.length === 1 ? m[0] : ''; })();
-  const k = igual || x;
-  cacheClave.set(x, k);
-  return k;
-}
 const tipoDe = x => x.celula || 'Pauta';
 const platDe = x => x.plataforma_efectiva || x.plataforma || 'Meta';
 const fechaDe = x => x.decidida_at || x.ejecutada_at || x.created_at;
@@ -62,16 +48,6 @@ function pasa(x) {
   return true;
 }
 const filtrar = lista => (lista || []).filter(pasa);
-function logoDe(nombre) {
-  const c = (estado.datos?.clientes || []).find(c => claveCliente(c.nombre) === claveCliente(nombre));
-  return c?.logo && /^https:\/\//.test(c.logo) ? c.logo : '';
-}
-function avatar(nombre, tam = 'sm') {
-  const url = logoDe(nombre);
-  const ini = esc(String(nombre || '?').trim().charAt(0).toUpperCase());
-  return url ? `<img class="av ${tam}" src="${esc(url)}" alt="" loading="lazy">` : `<span class="av ${tam} ini" aria-hidden="true">${ini}</span>`;
-}
-
 /* ---------- fechas ---------- */
 const fFecha = new Intl.DateTimeFormat('es-CL', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const fHora = new Intl.DateTimeFormat('es-CL', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -240,7 +216,6 @@ function render() {
   const nTotal = d.pendientes.length;
   $('n-pendientes').textContent = nP; $('n-curso').textContent = nC; $('n-errores').textContent = nE;
   $('n-pendientes').classList.toggle('hay', nP > 0); $('n-errores').classList.toggle('hay', nE > 0);
-  $('punto').hidden = nTotal === 0;
   document.title = `${nTotal ? `(${nTotal}) ` : ''}Bandeja · Panel Células`;
   $('sub').textContent = nTotal
     ? `${nTotal === 1 ? 'Hay 1 decisión esperándote' : `Hay ${nTotal} decisiones esperándote`}${hayFiltro() ? ` (${nP} con estos filtros)` : ''}.`
@@ -286,9 +261,8 @@ function pintarFiltros() {
     if (!mapa.has(k)) mapa.set(k, { nombre: x.cliente || x.cuenta, pend: 0 });
   }
   for (const x of d.pendientes || []) { const k = claveCliente(x.cliente); if (mapa.has(k)) mapa.get(k).pend++; }
-  const lista = [...mapa.entries()].sort((a, b) => b[1].pend - a[1].pend || a[1].nombre.localeCompare(b[1].nombre, 'es'));
-  $('clientes').innerHTML = `<button type="button" class="cl${filtro.cliente ? '' : ' on'}" data-cli="" aria-pressed="${!filtro.cliente}"><span class="av sm ini todos" aria-hidden="true">✦</span><span>Todos</span>${d.pendientes.length ? `<b>${d.pendientes.length}</b>` : ''}</button>` +
-    lista.map(([k, c]) => `<button type="button" class="cl${filtro.cliente === k ? ' on' : ''}" data-cli="${esc(k)}" aria-pressed="${filtro.cliente === k}" title="${esc(c.nombre)}">${avatar(c.nombre)}<span>${esc(c.nombre)}</span>${c.pend ? `<b>${c.pend}</b>` : ''}</button>`).join('');
+  const lista = [...mapa.values()].sort((a, b) => b.pend - a.pend || a.nombre.localeCompare(b.nombre, 'es'));
+  $('clientes').innerHTML = chipsClientes(lista.map(c => ({ nombre: c.nombre, n: c.pend })), filtro.cliente, d.pendientes.length);
   // Tipos presentes
   const tipos = [...new Set(todos.map(tipoDe))].sort((a, b) => a.localeCompare(b, 'es'));
   const sel = $('f-tipo'), actual = filtro.tipo;
@@ -311,7 +285,7 @@ async function cargar(silencioso) {
     return;
   }
   estado.datos = data;
-  cacheClave.clear();
+  usarClientes(data.clientes);
   $('vivo').className = 'vivo bien'; $('vivo').textContent = 'En vivo · ' + fHora.format(new Date());
   // No redibujar mientras hay un formulario abierto, para no borrar lo que se está escribiendo.
   if (!estado.abierto || !silencioso) render();
@@ -325,6 +299,7 @@ async function ejecutar(fn, args, exito) {
   estado.abierto = null;
   if (error) aviso(error.message || 'No se pudo completar.', 'mal'); else aviso(exito, 'bien');
   await cargar(false);
+  actualizarContadores();
   if (!error) setTimeout(() => cargar(true), 6000);
 }
 
@@ -370,6 +345,11 @@ $('f-limpiar').addEventListener('click', () => {
 
 /* ---------- inicio ---------- */
 estado.usuario = await exigirSesion();
+pintarRiel('bandeja');
 await cargar(false);
+{ // Enlace directo desde Células: /bandeja?cliente=Alimor
+  const p = new URLSearchParams(location.search).get('cliente');
+  if (p && estado.datos) { filtro.cliente = claveCliente(p); guardarFiltros(); history.replaceState(null, '', '/bandeja'); render(); }
+}
 setInterval(() => { if (!document.hidden) cargar(true); }, 20000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) cargar(true); });

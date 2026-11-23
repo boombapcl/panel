@@ -14,7 +14,8 @@
   <nav class="rail" aria-label="Secciones">
     <div class="rail-in">
       <span class="logo"><img src="/logo-marca.png" alt="Boombap"></span>
-      <a href="/" title="Bandeja de aprobaciones" aria-label="Bandeja de aprobaciones"><svg viewBox="0 0 24 24"><path d="M4 13.5 6.2 6a1.5 1.5 0 0 1 1.4-1h8.8a1.5 1.5 0 0 1 1.4 1L20 13.5V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18z"/><path d="M4 13.5h4.5a3.5 3.5 0 0 0 7 0H20"/></svg></a>
+      <a href="/" title="Tareas" aria-label="Tareas" class="riel-sec"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="m8.5 12.2 2.4 2.4 4.8-5"/></svg><i class="cnt" data-cnt="tareas" hidden></i></a>
+      <a href="/bandeja" title="Bandeja de aprobaciones" aria-label="Bandeja de aprobaciones" class="riel-sec"><svg viewBox="0 0 24 24"><path d="M4 13.5 6.2 6a1.5 1.5 0 0 1 1.4-1h8.8a1.5 1.5 0 0 1 1.4 1L20 13.5V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18z"/><path d="M4 13.5h4.5a3.5 3.5 0 0 0 7 0H20"/></svg><i class="cnt" data-cnt="bandeja" hidden></i></a>
       <a href="#resumen" class="on" title="Resumen" aria-label="Resumen"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg></a>
       <a href="#calendario" title="Clientes y calendario" aria-label="Clientes y calendario"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></a>
       <a href="#ciclo" title="Ciclo mensual" aria-label="Ciclo mensual"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 12h3M14 12h3"/></svg></a>
@@ -116,7 +117,7 @@
         <li>Los datos de Notion llegan a través de un espejo en Supabase que se actualiza cada minuto; usa «Actualizar» para traer lo último.</li>
       </ul>
     </details>
-    <footer id="foot">Fuente: Notion (espejo en Supabase) · Sistema de células Boombap · <a href="/">Ir a la Bandeja</a></footer>
+    <footer id="foot">Fuente: Notion (espejo en Supabase) · Sistema de células Boombap · <a href="/">Tareas</a> · <a href="/bandeja">Bandeja</a></footer>
   </main>
 </div>
 <script type="module" src="/src/celulas.js"></script>

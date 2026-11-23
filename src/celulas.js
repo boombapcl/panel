@@ -4,8 +4,30 @@
 import './acceso.css';
 import './celulas.css';
 import { sb, exigirSesion } from './lib/acceso.js';
+import { actualizarContadores } from './lib/riel.js';
+import { usarClientes, claveCliente } from './lib/clientes.js';
 
 await exigirSesion();
+actualizarContadores();
+setInterval(() => { if (!document.hidden) actualizarContadores(); }, 30000);
+// Tareas y decisiones pendientes por cliente, para la tabla «Clientes · etapa y estado».
+let PORCLI = { tareas: [], decisiones: [] };
+async function cargarPorCliente() {
+  const [pc, emp] = await Promise.all([sb.rpc('panel_por_cliente'), sb.from('companies').select('name').eq('status', 'activo')]);
+  if (pc.data) PORCLI = pc.data;
+  usarClientes((emp.data || []).map(e => ({ nombre: e.name })));
+}
+function pendientesDe(c) {
+  const k = claveCliente(c);
+  const t = PORCLI.tareas.filter(x => claveCliente(x.cliente) === k).reduce((s, x) => ({ n: s.n + x.abiertas, a: s.a + x.atrasadas }), { n: 0, a: 0 });
+  const d = PORCLI.decisiones.filter(x => claveCliente(x.cliente) === k).reduce((s, x) => s + x.n, 0);
+  const q = encodeURIComponent(c);
+  return (t.n ? `<span class="pc-link pill ${t.a ? 'warn' : 'todo'}" data-href="/?cliente=${q}" title="Ver tareas de ${c}${t.a ? ` (${t.a} atrasada${t.a === 1 ? '' : 's'})` : ''}">${t.n} tarea${t.n === 1 ? '' : 's'}</span>` : '')
+    + (d ? `<span class="pc-link pill wip" data-href="/bandeja?cliente=${q}" title="Ver decisiones de ${c}">${d} decisión${d === 1 ? '' : 'es'}</span>` : '');
+}
+document.addEventListener('click', ev => { const l = ev.target.closest('.pc-link'); if (l) { ev.stopPropagation(); ev.preventDefault(); location.href = l.dataset.href; } }, true);
+await cargarPorCliente();
+setInterval(() => { if (!document.hidden) cargarPorCliente().then(() => { try { renderClients(); } catch { /* aún sin datos */ } }); }, 60000);
 (function(){
 const CHK_URL='https://app.notion.com/p/c43bce045b8e47efa1c47d4731ea5def';
 const CLIENTS=['Alimor','Carillon','Donem','Krat','Mejac','Ventanas 2001','Kinebaric','Mamba Sport','Siosip'];
@@ -297,7 +319,7 @@ function renderClients(){
       <span class="cl-dots">${st.dots.map((d,i)=>`<i class="${d}" title="${STG[i]}" style="--sc:${STG_C[i]}"></i>`).join('')}</span>
       <span class="cl-st"><b>${STG[st.cur.h]}</b><span class="muted">${fd(st.cur.a)}${st.cur.b!==st.cur.a?' – '+fd(st.cur.b):''}</span></span>
       <span class="cl-nx muted">${st.act?'Activación '+fd(st.act.a):'Siguiente: '+(st.nx?STG[st.nx.h]+' '+fd(st.nx.a):'—')}</span>
-      <span class="cl-s">${chip}${note}</span></button>`}).join('');
+      <span class="cl-s">${chip}${note}${pendientesDe(c)}</span></button>`}).join('');
   const extraH=EXTRA.map(([c,a,b,k])=>`<div class="cl static"><span class="cl-n"><b>${esc(c)}</b><span class="muted">${esc(a)}</span></span><span class="cl-dots muted" style="font-size:12px">${esc(b)}</span><span></span><span></span><span class="cl-s">${k==='wait'?'<span class="pill warn">Esperando cliente</span>':'<span class="pill todo">Semanal</span>'}</span></div>`).join('');
   $('clients').innerHTML=`<div class="cl head"><span>Cliente</span><span>Etapas del ciclo</span><span>Etapa actual</span><span>Próximo</span><span>Estado</span></div>`+rowsH+extraH;
   document.querySelectorAll('#clients .cl[data-c]').forEach(b=>b.onclick=()=>{mtSel=mtSel===b.dataset.c?null:b.dataset.c;renderClients();renderCal()});

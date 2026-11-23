@@ -4,8 +4,39 @@ Panel interno de Boombap, publicado en **panel.boombap.cl** (VPS con Plesk). Los
 
 | Dirección | Qué es |
 |---|---|
-| `/` | **Bandeja**: todo lo que espera la decisión de Manuel, con Aprobar / Pedir cambio / Rechazar |
-| `/celulas` | Células, clientes, calendario Meta Timing y memoria |
+| `/` | **Tareas**: lo que hay que hacer a mano, agrupado por día (Atrasadas, Hoy, Mañana, Esta semana…). Usa la misma tabla `tasks` de Noise |
+| `/bandeja` | **Bandeja**: todo lo que espera la decisión de Manuel, con Aprobar / Pedir cambio / Rechazar |
+| `/celulas` | Células, clientes, calendario Meta Timing y memoria, con tareas y decisiones pendientes por cliente |
+
+Las tres páginas comparten el riel lateral con contadores (tareas de hoy + atrasadas, decisiones pendientes) y el filtro por cliente (`?cliente=Nombre` en Tareas y Bandeja).
+
+## Tareas
+
+- Agregar: escribir y Enter (tecla `n` lleva al campo). Cliente, día (Hoy / Mañana / Lunes / fecha), responsable y prioridad.
+- Cada tarea se abre para ver detalle, enlaces, subtareas, editar, marcar «en curso», posponer o descartar. Completar y descartar tienen «Deshacer».
+- Filtros por cliente, responsable, origen (manual / agente), prioridad y texto. Se recuerdan en el navegador.
+- Las tareas creadas por agentes llevan una etiqueta con su origen (Agente Pauta, Reportes, Resumen diario…).
+
+### Contrato para los agentes (tareas manuales)
+
+Cuando un agente o tarea programada necesita que alguien haga algo a mano, llama con service role:
+
+```sql
+select public.tarea_agente(
+  p_titulo      => 'Revisar Google Ads · Siosip',
+  p_origen      => 'Agente Pauta',                 -- etiqueta visible
+  p_ref         => 'pauta:google:siosip:2026-11-23', -- clave estable: evita duplicados mientras la tarea siga abierta
+  p_cliente     => 'Siosip',                        -- nombre aproximado; se busca en companies
+  p_fecha       => current_date,                    -- opcional (por defecto hoy, hora Chile)
+  p_detalle     => 'Qué hay que hacer y por qué',
+  p_prioridad   => 'alta',                          -- baja | media | alta (por defecto media)
+  p_enlaces     => '[{"t":"Abrir Google Ads","u":"https://ads.google.com/..."}]'
+);
+-- Cuando el agente detecta que ya está hecho:
+select public.tarea_agente_cerrar('pauta:google:siosip:2026-11-23', 'Se ve publicado en Google Ads');
+```
+
+Si se llama de nuevo con la misma `p_ref` mientras la tarea sigue abierta, se actualiza título, detalle y enlaces, pero no se pisan fecha, prioridad ni responsable que Manuel haya cambiado. El responsable por defecto es Manuel.
 
 Se entra con el mismo usuario y contraseña de Noise. Solo entran usuarios admin; solo quienes están en la tabla `panel_aprobadores` pueden aprobar (hoy, Manuel).
 
@@ -64,7 +95,7 @@ Cada cambio en `main` se compila con GitHub Actions y queda en la rama `publicad
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173 (Células en /celulas.html)
+npm run dev      # http://localhost:5173 (Bandeja en /bandeja.html, Células en /celulas.html)
 npm run build    # deja el sitio en dist/
 ```
 
@@ -77,5 +108,5 @@ npm run build    # deja el sitio en dist/
 ## Pendiente
 
 - Cargar `NOTION_TOKEN` en Supabase (Edge Functions → Secrets) para que Células pase a datos en vivo.
-- Pasar a la bandeja las solicitudes de cada agente y reducir Slack a un resumen diario.
-- Sumar Tareas, Tickets y programación de IG.
+- Sumar Tickets y programación de IG.
+- Dar perfil en Noise a Rocío para poder asignarle tareas.
