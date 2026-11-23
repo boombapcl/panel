@@ -98,7 +98,7 @@ h1 { font-size: clamp(26px, 3.4vw, 34px); font-weight: 600; line-height: 1.15; l
 .form textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; background: #fff; }
 
 .linea { font-size: 13.5px; font-weight: 600; padding: 8px 12px; border-radius: 10px; background: var(--todo-bg); color: var(--todo); }
-.linea.e-ejecutada { background: var(--ok-bg); color: var(--ok); }
+.linea.e-ejecutada, .linea.e-atendida { background: var(--ok-bg); color: var(--ok); }
 .linea.e-ejecutando, .linea.e-aprobada, .linea.e-cambios { background: var(--wip-bg); color: var(--wip); }
 .linea.e-error, .linea.e-rechazada { background: var(--warn-bg); color: var(--warn); }
 .com { font-size: 14px; color: #4a4a4c; }

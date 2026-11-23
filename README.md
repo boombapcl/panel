@@ -40,6 +40,7 @@ values (
 
 - `al_aprobar` acepta las mismas acciones que `pauta_acciones` (`reanudar_anuncio`, `pausar_anuncio`, `cargar_anuncio`, etc.). Incluye `parametros.nombre` para que la tarjeta muestre un nombre legible en vez del ID.
 - Estados que el agente debe leer en su siguiente corrida: `aprobada` (sin acciones: le toca continuar), `cambios` (leer `comentario`), `rechazada`, `vencida`.
+- Cuando el agente termina de atender una fila `aprobada` sin acciones o una `cambios`, la marca `atendida` y puede dejar una nota: `update public.aprobaciones set estado = 'atendida', resultado = jsonb_build_object('nota', '<qué hizo>') where id = '<id>';`
 - Nada se activa en Meta sin el clic de Manuel: las funciones `bandeja_decidir` y `bandeja_accion` validan su sesión.
 
 El esquema completo está en `supabase/migrations/`.

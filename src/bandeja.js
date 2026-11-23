@@ -18,7 +18,7 @@ const ACCION = {
 };
 const ESTADO = {
   pendiente: 'Pendiente', aprobada: 'Aprobada', ejecutando: 'Ejecutando', ejecutada: 'Ejecutada',
-  error: 'Con error', rechazada: 'Rechazada', cambios: 'Cambio pedido', vencida: 'Vencida',
+  error: 'Con error', rechazada: 'Rechazada', cambios: 'Cambio pedido', vencida: 'Vencida', atendida: 'Atendida',
 };
 
 const estado = { datos: null, tab: 'pendientes', abierto: null, ocupado: false, usuario: null };
@@ -109,8 +109,10 @@ function tarjetaAprobacion(a) {
     else if (a.estado === 'ejecutada') linea = `Aprobada por ${quien}. Ejecutada${hechas.length ? ` (${listas} ${listas === 1 ? 'acción' : 'acciones'} en Meta)` : ''}.`;
     else if (a.estado === 'rechazada') linea = `Rechazada por ${quien}.`;
     else if (a.estado === 'vencida') linea = `Venció sin respuesta el ${fecha(a.vence_at)}.`;
+    else if (a.estado === 'atendida') linea = a.decidida_por_nombre ? `Decidida por ${quien}. El agente de ${esc(a.celula)} ya la atendió.` : `El agente de ${esc(a.celula)} la cerró.`;
     else if (a.estado === 'error') linea = `Aprobada por ${quien}. Falló al ejecutar en Meta.`;
-    const com = a.comentario ? `<p class="com">«${esc(a.comentario)}»</p>` : '';
+    const nota = a.resultado && typeof a.resultado.nota === 'string' ? `<p class="com">Agente: ${esc(a.resultado.nota)}</p>` : '';
+    const com = (a.comentario ? `<p class="com">«${esc(a.comentario)}»</p>` : '') + nota;
     const filas = a.estado === 'error' || a.estado === 'ejecutando' ? `<ul class="subacc">${hechas.map(x => `
       <li class="s-${x.estado}"><span>${esc(ACCION[x.accion] || x.accion)} ${x.nombre ? '«' + esc(x.nombre) + '»' : esc(corto(x.ad_id))} · <b>${esc(ESTADO[x.estado] || x.estado)}</b>${x.error ? `<small>${esc(pista(x.error) || x.error)}</small>` : ''}</span>
       ${x.estado === 'error' && estado.datos.puede_aprobar ? `<span class="acc"><button class="b ok sm" data-do="reintentar" data-ids="${x.id}">Reintentar</button><button class="b sm" data-do="descartar" data-ids="${x.id}">Descartar</button></span>` : ''}</li>`).join('')}</ul>` : '';
