@@ -42,6 +42,16 @@
       <button role="tab" data-t="historial" aria-selected="false">Historial</button>
     </div>
 
+    <section class="filtros" aria-label="Filtros">
+      <div class="clientes" id="clientes" role="group" aria-label="Cliente"></div>
+      <div class="selects">
+        <label>Tipo<select id="f-tipo"><option value="">Todos</option></select></label>
+        <label>Plataforma<select id="f-plat"><option value="">Todas</option><option>Meta</option><option>Google</option><option>Instagram</option><option>Web</option><option>Otra</option></select></label>
+        <label>Fecha<select id="f-fecha"><option value="">Todo</option><option value="hoy">Hoy</option><option value="7">Últimos 7 días</option><option value="30">Últimos 30 días</option></select></label>
+        <button class="btn limpiar" id="f-limpiar" type="button" hidden>Quitar filtros</button>
+      </div>
+    </section>
+
     <div class="lista" id="lista" aria-live="polite"></div>
   </main>
 </div>

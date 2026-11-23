@@ -16,6 +16,8 @@ Se entra con el mismo usuario y contraseña de Noise. Solo entran usuarios admin
 3. Si la fila trae acciones de Meta en `al_aprobar`, se ejecutan al aprobar (de a dos a la vez). Si falla alguna, la solicitud pasa a **Errores** con botón Reintentar.
 4. Si no trae acciones, queda `aprobada` y el agente del área la toma en su próxima corrida.
 
+Filtros: cliente (con su logo de la ficha en Noise y el número de pendientes), tipo (Pauta, Boost IG…), plataforma y fecha. Se recuerdan en el navegador.
+
 Pestañas: **Pendientes**, **En curso** (ejecutándose, con cambio pedido o aprobadas que nunca se ejecutaron), **Errores** e **Historial**.
 
 ### Contrato para los agentes
@@ -38,6 +40,7 @@ values (
 );
 ```
 
+- `plataforma` (opcional): `Meta`, `Google`, `Instagram`, `Web` u `Otra`. Si va vacío y hay acciones, la Bandeja asume Meta. Sirve para el filtro por plataforma.
 - `al_aprobar` acepta las mismas acciones que `pauta_acciones` (`reanudar_anuncio`, `pausar_anuncio`, `cargar_anuncio`, etc.). Incluye `parametros.nombre` para que la tarjeta muestre un nombre legible en vez del ID.
 - Estados que el agente debe leer en su siguiente corrida: `aprobada` (sin acciones: le toca continuar), `cambios` (leer `comentario`), `rechazada`, `vencida`.
 - Cuando el agente termina de atender una fila `aprobada` sin acciones o una `cambios`, la marca `atendida` y puede dejar una nota: `update public.aprobaciones set estado = 'atendida', resultado = jsonb_build_object('nota', '<qué hizo>') where id = '<id>';`

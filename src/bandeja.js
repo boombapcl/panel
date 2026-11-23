@@ -23,6 +23,55 @@ const ESTADO = {
 
 const estado = { datos: null, tab: 'pendientes', abierto: null, ocupado: false, usuario: null };
 
+/* ---------- filtros ---------- */
+const CLAVE_FILTROS = 'bandeja-filtros';
+const filtro = (() => {
+  try { return { cliente: '', tipo: '', plat: '', fecha: '', ...JSON.parse(localStorage.getItem(CLAVE_FILTROS) || '{}') }; }
+  catch { return { cliente: '', tipo: '', plat: '', fecha: '' }; }
+})();
+function guardarFiltros() { try { localStorage.setItem(CLAVE_FILTROS, JSON.stringify(filtro)); } catch { /* sin almacenamiento */ } }
+// Un mismo cliente puede venir escrito distinto («Mamba Sport» y «Mamba Sport Chile»,
+// «Krat» y «KRAT Inmobiliaria»): se une al cliente de Noise cuyo nombre empieza igual.
+const normal = n => String(n || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+const cacheClave = new Map();
+function claveCliente(n) {
+  const x = normal(n); if (!x) return '';
+  if (cacheClave.has(x)) return cacheClave.get(x);
+  const nombres = (estado.datos?.clientes || []).map(c => normal(c.nombre));
+  const igual = nombres.find(c => c === x)
+    || nombres.find(c => c.startsWith(x + ' ') || x.startsWith(c + ' '))
+    || (() => { const p = x.split(' ')[0]; const m = nombres.filter(c => c.split(' ')[0] === p); return m.length === 1 ? m[0] : ''; })();
+  const k = igual || x;
+  cacheClave.set(x, k);
+  return k;
+}
+const tipoDe = x => x.celula || 'Pauta';
+const platDe = x => x.plataforma_efectiva || x.plataforma || 'Meta';
+const fechaDe = x => x.decidida_at || x.ejecutada_at || x.created_at;
+function pasa(x) {
+  if (filtro.cliente && claveCliente(x.cliente || x.cuenta) !== filtro.cliente) return false;
+  if (filtro.tipo && tipoDe(x) !== filtro.tipo) return false;
+  if (filtro.plat && platDe(x) !== filtro.plat) return false;
+  if (filtro.fecha) {
+    const t = new Date(fechaDe(x)).getTime();
+    if (filtro.fecha === 'hoy') {
+      const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+      if (new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(t)) !== hoy) return false;
+    } else if (Date.now() - t > Number(filtro.fecha) * 86400000) return false;
+  }
+  return true;
+}
+const filtrar = lista => (lista || []).filter(pasa);
+function logoDe(nombre) {
+  const c = (estado.datos?.clientes || []).find(c => claveCliente(c.nombre) === claveCliente(nombre));
+  return c?.logo && /^https:\/\//.test(c.logo) ? c.logo : '';
+}
+function avatar(nombre, tam = 'sm') {
+  const url = logoDe(nombre);
+  const ini = esc(String(nombre || '?').trim().charAt(0).toUpperCase());
+  return url ? `<img class="av ${tam}" src="${esc(url)}" alt="" loading="lazy">` : `<span class="av ${tam} ini" aria-hidden="true">${ini}</span>`;
+}
+
 /* ---------- fechas ---------- */
 const fFecha = new Intl.DateTimeFormat('es-CL', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const fHora = new Intl.DateTimeFormat('es-CL', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -60,6 +109,7 @@ function pista(error) {
 }
 const slug = s => String(s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const chip = celula => `<span class="chip c-${slug(celula)}">${esc(celula)}</span>`;
+const plat = p => (!p || p === 'Otra') ? '' : `<span class="plat p-${slug(p)}">${esc(p)}</span>`;
 function enlaces(lista) {
   const ok = (lista || []).filter(e => e && /^https:\/\//.test(e.u || ''));
   if (!ok.length) return '';
@@ -120,7 +170,7 @@ function tarjetaAprobacion(a) {
   }
   const vence = pend && a.vence_at ? ` · vence ${fecha(a.vence_at)}` : '';
   return `<article class="tj${pend ? ' viva' : ''}">
-    <div class="tj-top">${chip(a.celula)}<b class="cli">${esc(a.cliente || 'General')}</b><span class="cuando" title="${esc(fecha(a.created_at))}">${hace(a.created_at)}${esc(vence)}</span></div>
+    <div class="tj-top">${avatar(a.cliente)}<b class="cli">${esc(a.cliente || 'General')}</b>${chip(a.celula)}${plat(platDe(a))}<span class="cuando" title="${esc(fecha(a.created_at))}">${hace(a.created_at)}${esc(vence)}</span></div>
     <h2>${esc(a.titulo)}</h2>
     ${a.detalle ? `<p class="det">${esc(a.detalle)}</p>` : ''}
     ${hara}${enlaces(a.enlaces)}
@@ -131,7 +181,7 @@ function tarjetaAprobacion(a) {
 
 function tarjetaSuelta(x) {
   const espera = x.estado === 'aprobada';
-  const cab = `<div class="tj-top">${chip('Pauta')}<b class="cli">${esc(x.cliente || x.cuenta)}</b><span class="cuando">${hace(x.created_at)}</span></div>
+  const cab = `<div class="tj-top">${avatar(x.cliente)}<b class="cli">${esc(x.cliente || x.cuenta)}</b>${chip(tipoDe(x))}${plat('Meta')}<span class="cuando">${hace(x.created_at)}</span></div>
     <h2>${esc(ACCION[x.accion] || x.accion)}${x.nombre ? `: ${esc(x.nombre)}` : x.ad_id ? ` ${esc(corto(x.ad_id))}` : ''}</h2>`;
   const linea = espera
     ? `<p class="linea e-cambios">Aprobada el ${fecha(x.aprobada_at)} y nunca se ejecutó.</p>`
@@ -157,7 +207,7 @@ function tarjetaError(g) {
   const acc = estado.datos.puede_aprobar
     ? `<div class="acc"><button class="b ${bl ? '' : 'ok'}" data-do="reintentar" data-ids="${x.id}" data-otros="${g.ids.filter(i => i !== x.id).join(',')}">${bl || 'Reintentar'}</button><button class="b" data-do="descartar" data-ids="${g.ids.join(',')}">Descartar</button></div>` : '';
   return `<article class="tj err">
-    <div class="tj-top">${chip('Pauta')}<b class="cli">${esc(x.cliente || x.cuenta)}</b><span class="cuando">${hace(x.created_at)}${g.ids.length > 1 ? ` · ${g.ids.length} intentos` : ''}</span></div>
+    <div class="tj-top">${avatar(x.cliente)}<b class="cli">${esc(x.cliente || x.cuenta)}</b>${chip(tipoDe(x))}${plat('Meta')}<span class="cuando">${hace(x.created_at)}${g.ids.length > 1 ? ` · ${g.ids.length} intentos` : ''}</span></div>
     <h2>${esc(ACCION[x.accion] || x.accion)}${x.nombre ? `: ${esc(x.nombre)}` : ''}</h2>
     ${p ? `<p class="det">${esc(p)}</p>` : ''}
     <details class="crudo"><summary>Ver el error original</summary><p>${esc(x.error)}</p></details>
@@ -182,40 +232,69 @@ const titulo = (t, s) => `<h3 class="sec">${esc(t)}${s ? `<span>${esc(s)}</span>
 function render() {
   const d = estado.datos;
   if (!d) return;
-  const errores = agruparErrores(d.acciones_error);
-  const nP = d.pendientes.length, nC = d.en_curso.length + d.acciones_en_curso.length, nE = d.errores.length + errores.length;
+  pintarFiltros();
+  const pend = filtrar(d.pendientes), curso = filtrar(d.en_curso), cursoSu = filtrar(d.acciones_en_curso);
+  const errAp = filtrar(d.errores), hist = filtrar(d.historial), recientes = filtrar(d.acciones_recientes);
+  const errores = agruparErrores(filtrar(d.acciones_error));
+  const nP = pend.length, nC = curso.length + cursoSu.length, nE = errAp.length + errores.length;
+  const nTotal = d.pendientes.length;
   $('n-pendientes').textContent = nP; $('n-curso').textContent = nC; $('n-errores').textContent = nE;
   $('n-pendientes').classList.toggle('hay', nP > 0); $('n-errores').classList.toggle('hay', nE > 0);
-  $('punto').hidden = nP === 0;
-  document.title = `${nP ? `(${nP}) ` : ''}Bandeja · Panel Células`;
-  $('sub').textContent = nP
-    ? `${nP === 1 ? 'Hay 1 decisión esperándote' : `Hay ${nP} decisiones esperándote`}.`
+  $('punto').hidden = nTotal === 0;
+  document.title = `${nTotal ? `(${nTotal}) ` : ''}Bandeja · Panel Células`;
+  $('sub').textContent = nTotal
+    ? `${nTotal === 1 ? 'Hay 1 decisión esperándote' : `Hay ${nTotal} decisiones esperándote`}${hayFiltro() ? ` (${nP} con estos filtros)` : ''}.`
     : 'No hay nada esperando tu decisión.';
   document.querySelectorAll('#tabs [role=tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === estado.tab)));
 
   let h = '';
   if (estado.tab === 'pendientes') {
-    h = nP ? d.pendientes.map(tarjetaAprobacion).join('') : vacio('Bandeja al día', 'Cuando un agente necesite tu decisión, aparece aquí.');
+    h = nP ? pend.map(tarjetaAprobacion).join('') : (hayFiltro() ? vacio('Nada con estos filtros', 'Prueba con otro cliente o quita los filtros.') : vacio('Bandeja al día', 'Cuando un agente necesite tu decisión, aparece aquí.'));
   } else if (estado.tab === 'curso') {
     if (!nC) h = vacio('Nada en curso', 'Lo que apruebes se ejecuta al momento y pasa al historial.');
     else {
-      if (d.en_curso.length) h += d.en_curso.map(tarjetaAprobacion).join('');
-      if (d.acciones_en_curso.length) h += titulo('Aprobadas fuera de la bandeja', 'Quedaron sin ejecutar') + d.acciones_en_curso.map(tarjetaSuelta).join('');
+      if (curso.length) h += curso.map(tarjetaAprobacion).join('');
+      if (cursoSu.length) h += titulo('Aprobadas fuera de la bandeja', 'Quedaron sin ejecutar') + cursoSu.map(tarjetaSuelta).join('');
     }
   } else if (estado.tab === 'errores') {
     if (!nE) h = vacio('Sin errores', 'Si una acción falla en Meta, queda aquí para reintentarla.');
-    else h = d.errores.map(tarjetaAprobacion).join('') + errores.map(tarjetaError).join('');
+    else h = errAp.map(tarjetaAprobacion).join('') + errores.map(tarjetaError).join('');
   } else {
-    h = titulo('Decisiones', 'Últimas 40') + (d.historial.length ? d.historial.map(tarjetaAprobacion).join('') : vacio('Aún no hay decisiones', 'Lo que apruebes o rechaces queda registrado aquí.'));
-    if (d.acciones_recientes.length) {
+    h = titulo('Decisiones', 'Últimos 90 días') + (hist.length ? hist.map(tarjetaAprobacion).join('') : vacio('Sin decisiones', hayFiltro() ? 'No hay decisiones con estos filtros.' : 'Lo que apruebes o rechaces queda registrado aquí.'));
+    if (recientes.length) {
       h += titulo('Últimas acciones en Meta', 'Hechas por los agentes') + `<div class="tabla"><table><thead><tr><th>Cuándo</th><th>Cliente</th><th>Acción</th><th>Aprobó</th></tr></thead><tbody>${
-        d.acciones_recientes.map(x => `<tr><td class="num">${esc(fecha(x.ejecutada_at))}</td><td>${esc(x.cliente || x.cuenta)}</td><td>${esc(ACCION[x.accion] || x.accion)}${x.nombre ? `<small>${esc(x.nombre)}</small>` : ''}</td><td><small>${esc(x.aprobada_por || '')}</small></td></tr>`).join('')
+        recientes.map(x => `<tr><td class="num">${esc(fecha(x.ejecutada_at))}</td><td><span class="celda-cli">${avatar(x.cliente, 'xs')}${esc(x.cliente || x.cuenta)}</span></td><td>${esc(ACCION[x.accion] || x.accion)}${x.nombre ? `<small>${esc(x.nombre)}</small>` : ''}</td><td><small>${esc(x.aprobada_por || '')}</small></td></tr>`).join('')
       }</tbody></table></div>`;
     }
   }
   $('lista').innerHTML = h;
   const campo = estado.abierto && document.getElementById('com-' + estado.abierto.id);
   if (campo) campo.focus();
+}
+
+function hayFiltro() { return !!(filtro.cliente || filtro.tipo || filtro.plat || filtro.fecha); }
+
+function pintarFiltros() {
+  const d = estado.datos;
+  // Clientes: los activos de Noise más cualquiera que aparezca en la Bandeja.
+  const todos = [...(d.pendientes || []), ...(d.en_curso || []), ...(d.errores || []), ...(d.historial || []),
+    ...(d.acciones_en_curso || []), ...(d.acciones_error || []), ...(d.acciones_recientes || [])];
+  const mapa = new Map();
+  for (const c of d.clientes || []) mapa.set(claveCliente(c.nombre), { nombre: c.nombre, pend: 0 });
+  for (const x of todos) {
+    const k = claveCliente(x.cliente || x.cuenta); if (!k) continue;
+    if (!mapa.has(k)) mapa.set(k, { nombre: x.cliente || x.cuenta, pend: 0 });
+  }
+  for (const x of d.pendientes || []) { const k = claveCliente(x.cliente); if (mapa.has(k)) mapa.get(k).pend++; }
+  const lista = [...mapa.entries()].sort((a, b) => b[1].pend - a[1].pend || a[1].nombre.localeCompare(b[1].nombre, 'es'));
+  $('clientes').innerHTML = `<button type="button" class="cl${filtro.cliente ? '' : ' on'}" data-cli="" aria-pressed="${!filtro.cliente}"><span class="av sm ini todos" aria-hidden="true">✦</span><span>Todos</span>${d.pendientes.length ? `<b>${d.pendientes.length}</b>` : ''}</button>` +
+    lista.map(([k, c]) => `<button type="button" class="cl${filtro.cliente === k ? ' on' : ''}" data-cli="${esc(k)}" aria-pressed="${filtro.cliente === k}" title="${esc(c.nombre)}">${avatar(c.nombre)}<span>${esc(c.nombre)}</span>${c.pend ? `<b>${c.pend}</b>` : ''}</button>`).join('');
+  // Tipos presentes
+  const tipos = [...new Set(todos.map(tipoDe))].sort((a, b) => a.localeCompare(b, 'es'));
+  const sel = $('f-tipo'), actual = filtro.tipo;
+  sel.innerHTML = '<option value="">Todos</option>' + tipos.map(t => `<option${t === actual ? ' selected' : ''}>${esc(t)}</option>`).join('');
+  $('f-plat').value = filtro.plat; $('f-fecha').value = filtro.fecha;
+  $('f-limpiar').hidden = !hayFiltro();
 }
 
 function aviso(texto, tipo) {
@@ -232,6 +311,7 @@ async function cargar(silencioso) {
     return;
   }
   estado.datos = data;
+  cacheClave.clear();
   $('vivo').className = 'vivo bien'; $('vivo').textContent = 'En vivo · ' + fHora.format(new Date());
   // No redibujar mientras hay un formulario abierto, para no borrar lo que se está escribiendo.
   if (!estado.abierto || !silencioso) render();
@@ -277,6 +357,16 @@ $('lista').addEventListener('click', async ev => {
   }
 });
 $('salir').addEventListener('click', salir);
+$('clientes').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-cli]'); if (!b) return;
+  filtro.cliente = filtro.cliente === b.dataset.cli ? '' : b.dataset.cli; guardarFiltros(); estado.abierto = null; render();
+});
+for (const [id, k] of [['f-tipo', 'tipo'], ['f-plat', 'plat'], ['f-fecha', 'fecha']]) {
+  $(id).addEventListener('change', ev => { filtro[k] = ev.target.value; guardarFiltros(); estado.abierto = null; render(); });
+}
+$('f-limpiar').addEventListener('click', () => {
+  Object.assign(filtro, { cliente: '', tipo: '', plat: '', fecha: '' }); guardarFiltros(); render();
+});
 
 /* ---------- inicio ---------- */
 estado.usuario = await exigirSesion();
