@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Células · Panel Células</title>
+<link rel="icon" href="/logo-marca.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="Secciones">
+    <div class="rail-in">
+      <span class="logo"><img src="/logo-marca.png" alt="Boombap"></span>
+      <a href="/" title="Bandeja de aprobaciones" aria-label="Bandeja de aprobaciones"><svg viewBox="0 0 24 24"><path d="M4 13.5 6.2 6a1.5 1.5 0 0 1 1.4-1h8.8a1.5 1.5 0 0 1 1.4 1L20 13.5V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18z"/><path d="M4 13.5h4.5a3.5 3.5 0 0 0 7 0H20"/></svg></a>
+      <a href="#resumen" class="on" title="Resumen" aria-label="Resumen"><svg viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg></a>
+      <a href="#calendario" title="Clientes y calendario" aria-label="Clientes y calendario"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></a>
+      <a href="#ciclo" title="Ciclo mensual" aria-label="Ciclo mensual"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 12h3M14 12h3"/></svg></a>
+      <a href="#celulas" title="Células" aria-label="Células"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="4" r="1.6"/><circle cx="19" cy="16" r="1.6"/><circle cx="5" cy="16" r="1.6"/><path d="M12 5.6V9M17.6 15.2l-3-1.7M6.4 15.2l3-1.7"/></svg></a>
+      <a href="#automatizaciones" title="Automatizaciones" aria-label="Automatizaciones"><svg viewBox="0 0 24 24"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/></svg></a>
+      <a href="#fichas" title="ADN y registros" aria-label="ADN y registros"><svg viewBox="0 0 24 24"><path d="M7 3c0 6 10 6 10 12M17 3c0 6-10 6-10 12M7 21c0-2 1-3.5 3-4.5M17 21c0-2-1-3.5-3-4.5M8.5 7h7M8.5 13h7"/></svg></a>
+      <a href="#memoria" title="Memoria" aria-label="Memoria"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M8 10h8M8 14h5"/></svg></a>
+    </div>
+    <span class="rail-tag">BOOMBAP · AGENTES 2026</span>
+  </nav>
+
+  <aside class="side" aria-label="Células">
+    <div class="brand"><img src="/logo-boombap.png" alt="Boombap"></div>
+    <div class="who"><span class="av">MS</span><div><b>Manuel Sandoval</b><span>Boombap · Temuco</span></div></div>
+    <div class="grp"><span class="eyebrow">Células</span><div id="side-cells"></div></div>
+    <hr>
+    <div class="grp"><span class="eyebrow">Estado</span><div id="side-state"></div></div>
+    <hr>
+    <div class="liveblk"><span class="eyebrow">Fuente</span><span class="live" id="live">Datos guardados</span><span class="muted" style="font-size:12px" id="stamp">12-nov-2026</span><button class="btn" id="refresh" type="button">Actualizar</button></div>
+  </aside>
+
+  <main class="main">
+    <header class="head" id="resumen">
+      <div><p class="eyebrow">Ecosistema de agentes</p><h1>Células Boombap</h1></div>
+      <div class="tabs" id="tabs" role="tablist" aria-label="Filtrar por célula"></div>
+    </header>
+
+    <div class="notice" id="notice" hidden></div>
+
+    <section class="hero" aria-label="Resumen">
+      <div class="card big">
+        <p class="eyebrow">Avance total del sistema</p>
+        <div class="row">
+          <span class="val num" id="bigval">0<small>%</small></span>
+          <span class="delta" id="bigdelta">12-nov</span>
+          <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="tr" cx="50" cy="50" r="42"/><circle class="pg" id="ringpg" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9" transform="rotate(-90 50 50)"/><text id="ringtx" x="50" y="58">0%</text></svg>
+        </div>
+        
+      </div>
+      <div class="card vitals">
+        <div class="vital"><span class="lbl">Células en marcha</span><span class="v num" id="k-cel">0/6</span></div>
+        <div class="vital"><span class="lbl">Automatizaciones activas</span><span class="v num" id="k-aut">0/0</span></div>
+        <div class="vital"><span class="lbl">ADN de clientes</span><span class="v num" id="k-adn">—</span></div>
+        <button class="vital" type="button" id="v-ped" style="font:inherit;color:inherit;background:none;border:0;border-left:1px solid var(--line);text-align:left;cursor:pointer"><span class="lbl">Pedidos abiertos ↘</span><span class="v num" id="k-ped">0</span></button>
+      </div>
+    </section>
+
+    <section class="card" id="clientes" aria-label="Estado de clientes">
+      <div class="schema-h"><h2>Clientes · etapa y estado</h2><span class="muted" style="font-size:13px">Desde Meta Timing. Toca un cliente para filtrar el calendario.</span></div>
+      <div class="cl-wrap"><div class="cls" id="clients"></div></div>
+      <div class="lg3" id="stglg"></div>
+    </section>
+
+    <section class="card" id="calendario" aria-label="Calendario Meta Timing">
+      <div class="schema-h"><h2 id="calt">Calendario</h2><span class="calnav"><button class="btn" id="calp" type="button" aria-label="Mes anterior">←</button><button class="btn" id="calh" type="button">Hoy</button><button class="btn" id="caln" type="button" aria-label="Mes siguiente">→</button></span></div>
+      <div class="cal-wrap"><div class="cal" id="cal"></div></div>
+    </section>
+
+    <section class="card cycle" id="ciclo" aria-label="Ciclo mensual">
+      <div class="cycle-h"><h2>Ciclo mensual</h2><span class="muted" style="font-size:13px">Días hábiles hacia el día D de cada cliente</span></div>
+      <div class="tl-wrap"><div class="tl" id="tl"></div></div>
+    </section>
+
+    <section class="card schema" id="celulas" aria-label="Esquema del ecosistema">
+      <div class="schema-h"><h2>Esquema del ecosistema</h2><span class="lg2"><span><b>Célula</b> = área con su proceso y personas · <b>Agente</b> = la IA que trabaja dentro</span><span><i></i>usa la plataforma</span><span><i class="d"></i>lee y escribe en la memoria</span><span>Pasa el cursor o toca una célula</span></span></div>
+      <div class="map-wrap"><svg class="map" id="map" viewBox="0 0 1200 660" role="img" aria-label="Las seis células, la memoria compartida y las plataformas que usa cada una"></svg></div>
+    </section>
+
+    <div class="cells" id="cells"></div>
+
+    <section class="card detail" id="detail" aria-live="polite"></section>
+
+    <section class="duo" id="automatizaciones">
+      <div class="card"><h2>Automatizaciones</h2><div class="list" id="autos"></div></div>
+      <div class="card"><h2>Base común</h2><div class="list" id="base"></div></div>
+    </section>
+
+    <section class="files" id="fichas">
+      <div class="card"><div class="schema-h"><h2>ADN de clientes</h2><span class="muted" style="font-size:13px" id="adnsub"></span></div><div class="adns" id="adns"></div></div>
+      <div class="card"><h2>Registros</h2><div class="logs" id="logs"></div></div>
+    </section>
+
+    <div class="dock" aria-label="Rutinas programadas"><span class="lab">Rutinas</span><div id="dock" style="display:contents"></div></div>
+
+    <section class="card" id="memoria">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <h2>Actividad en la memoria</h2><span class="muted" style="font-size:13px" id="feedsub">Cambios, decisiones y pedidos entre células</span>
+      </div>
+      <div class="feed" id="feed"></div>
+    </section>
+
+    <details class="card">
+      <summary>Cómo funciona</summary>
+      <ul>
+        <li>Cada célula trabaja en su conversación «Célula | Boombap Agentes» y cada cliente en su proyecto.</li>
+        <li>Todas leen y escriben en la Memoria de células de Notion; así se enteran de lo que hacen las otras.</li>
+        <li>El avance de cada célula sale de su checklist en Notion: listo cuenta completo, en curso cuenta la mitad.</li>
+        <li>«Lo siguiente a avanzar» es el primer ítem en curso o, si no hay, el primer pendiente según «Orden». Los que dicen «esperando» se saltan.</li>
+        <li>Los datos de Notion llegan a través de un espejo en Supabase que se actualiza cada minuto; usa «Actualizar» para traer lo último.</li>
+      </ul>
+    </details>
+    <footer id="foot">Fuente: Notion (espejo en Supabase) · Sistema de células Boombap · <a href="/">Ir a la Bandeja</a></footer>
+  </main>
+</div>
+<script type="module" src="/src/celulas.js"></script>
+</body>
+</html>

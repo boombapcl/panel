@@ -1,0 +1,14 @@
+/* Pantalla de acceso, compartida por todas las páginas del panel */
+.sin-sesion body > :not(.acceso) { display: none !important; }
+.acceso { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #ecece8; font-family: "Manrope", ui-sans-serif, system-ui, sans-serif; color: #2b2b2d; }
+.acceso-in { width: min(360px, 100%); background: #fff; border: 1px solid #e0e0db; border-radius: 24px; padding: 28px 26px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 12px 30px -20px rgba(40, 40, 30, .35); }
+.acceso-in img { display: block; margin-bottom: 6px; height: auto; }
+.acceso-in h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+.acceso-sub { margin: 0 0 4px; color: #6e6e6a; font-size: 14px; }
+.acceso-in label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600; }
+.acceso-in input { font: inherit; font-weight: 400; font-size: 15px; padding: 10px 12px; border: 1px solid #d4d4cd; border-radius: 12px; background: #f6f6f3; color: inherit; }
+.acceso-in input:focus-visible { outline: 2px solid #EA1F50; outline-offset: 1px; background: #fff; }
+.acceso-err { margin: 0; min-height: 18px; font-size: 13px; color: #c2410c; }
+.acceso-in button { font: inherit; font-weight: 700; font-size: 15px; padding: 11px 14px; border: 0; border-radius: 12px; background: #2b2b2d; color: #fff; cursor: pointer; }
+.acceso-in button:hover { background: #000; }
+.acceso-in button:disabled { opacity: .6; cursor: progress; }
