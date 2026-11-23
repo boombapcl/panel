@@ -142,11 +142,20 @@ function tarjetaSuelta(x) {
     <p class="por">${esc(x.aprobada_por || x.solicitado_por)}</p>${acc}</article>`;
 }
 
+// Errores que no se arreglan reintentando: primero hay que hacer algo fuera del panel.
+function bloqueo(error) {
+  const e = String(error || '');
+  if (/Faltan permisos de página|does not have permission/i.test(e)) return 'Reintentar después de dar el permiso';
+  if (/Drive: File not found/i.test(e)) return 'Reintentar después de compartir el archivo';
+  return '';
+}
+
 function tarjetaError(g) {
   const x = g.ultima;
   const p = pista(x.error);
+  const bl = bloqueo(x.error);
   const acc = estado.datos.puede_aprobar
-    ? `<div class="acc"><button class="b ok" data-do="reintentar" data-ids="${x.id}" data-otros="${g.ids.filter(i => i !== x.id).join(',')}">Reintentar</button><button class="b" data-do="descartar" data-ids="${g.ids.join(',')}">Descartar</button></div>` : '';
+    ? `<div class="acc"><button class="b ${bl ? '' : 'ok'}" data-do="reintentar" data-ids="${x.id}" data-otros="${g.ids.filter(i => i !== x.id).join(',')}">${bl || 'Reintentar'}</button><button class="b" data-do="descartar" data-ids="${g.ids.join(',')}">Descartar</button></div>` : '';
   return `<article class="tj err">
     <div class="tj-top">${chip('Pauta')}<b class="cli">${esc(x.cliente || x.cuenta)}</b><span class="cuando">${hace(x.created_at)}${g.ids.length > 1 ? ` · ${g.ids.length} intentos` : ''}</span></div>
     <h2>${esc(ACCION[x.accion] || x.accion)}${x.nombre ? `: ${esc(x.nombre)}` : ''}</h2>
