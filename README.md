@@ -11,6 +11,10 @@ Panel interno de Boombap, publicado en **panel.boombap.cl** (VPS con Plesk). Los
 
 Todas las páginas comparten el **menú lateral** (`src/lib/menu.js`): cada sección con título, descripción, contador y submenú. En escritorio se expande o se contrae a íconos (el submenú aparece al pasar el cursor); en pantallas angostas es una barra superior con menú deslizable. Los enlaces del submenú usan la dirección (`/?vista=hoy`, `/bandeja?tab=errores`, `/clientes?ver=pendientes`), así que se pueden guardar y compartir.
 
+### Tareas de Meta Timing ↔ Notion
+
+Las tareas con `origen_ref = 'meta-timing:<url>'` (hitos copiados por el Resumen diario) están sincronizadas en ambos sentidos: al completarlas en el Panel, el hito queda **Hecho** en Notion al instante (y vuelve a **Pendiente** si se deshace), mediante el disparador `tasks_avisar_notion` y la función `notion-hito`; al marcar el hito Hecho en Notion, el Resumen diario cierra la tarea. Los hitos D y D+10 no se copian como tareas: los prepara y cierra el Agente Pauta.
+
 ### Timer
 
 Cada tarea abierta tiene ▶ para medir tiempo. El timer se guarda en Supabase (`task_time_logs`), no en el navegador: sigue corriendo si cambias de página o de dispositivo y se ve en el menú. Un timer por persona: al iniciar otro se detiene el anterior; al completar o descartar la tarea se detiene solo. El total queda en `tasks.time_spent` (minutos, igual que Noise) y se puede ajustar a mano al editar la tarea. Funciones: `timer_actual`, `timer_iniciar`, `timer_detener`, `timer_ajustar`.
