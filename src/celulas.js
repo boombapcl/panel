@@ -4,12 +4,10 @@
 import './acceso.css';
 import './celulas.css';
 import { sb, exigirSesion } from './lib/acceso.js';
-import { actualizarContadores } from './lib/riel.js';
+import { iniciarMenu } from './lib/menu.js';
 import { usarClientes, claveCliente } from './lib/clientes.js';
 
-await exigirSesion();
-actualizarContadores();
-setInterval(() => { if (!document.hidden) actualizarContadores(); }, 30000);
+iniciarMenu('celulas', await exigirSesion());
 // Tareas y decisiones pendientes por cliente, para la tabla «Clientes · etapa y estado».
 let PORCLI = { tareas: [], decisiones: [] };
 async function cargarPorCliente() {
@@ -100,7 +98,7 @@ const ICO={
  Finanzas:'<rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/>',
  Personal:'<circle cx="12" cy="12" r="2"/><path d="M12 12l6-6"/><path d="M5.6 18.4A9 9 0 1121 12"/><path d="M8.5 15.5A5 5 0 1117 12"/>'
 };
-const MARKSRC=(document.querySelector('.rail-in .logo img')||{}).src||'';
+const MARKSRC='/logo-marca.png';
 const icoSvg=(c,sz)=>`<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICO[c]||''}</svg>`;
 const TINT={Operaciones:['#e4f1e8','#1f7a4f'],'Planificación':['#f7f0d6','#8a6a00'],'Producción':['#fbe7da','#b5501d'],Pauta:['#fde4ea','#c8173f'],Reportes:['#e2ecf9','#1f5fae'],Ventas:['#fbe2ef','#b0246b'],Marketing:['#ece6fb','#5b3cc4'],Finanzas:['#efe9df','#7a5a2e'],Personal:['#e9edf1','#3d4a57']};
 function mediaHTML(c,big){const t=TINT[c]||['#f1f1ee','#2b2b2d'];const idx=String(ORDER.indexOf(c)+1).padStart(2,'0');return `<div class="pm${big?' big':''}" style="--ti:${t[1]}"><span class="pm-ic">${icoSvg(c,big?30:22)}</span><span class="pm-txt"><span class="pm-tag">Célula ${idx}</span><span class="pm-name">${esc(FICHA[c]?FICHA[c].t:c)}</span></span></div>`}

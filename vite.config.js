@@ -11,6 +11,7 @@ export default defineConfig({
         index: resolve(import.meta.dirname, 'index.html'),
         bandeja: resolve(import.meta.dirname, 'bandeja.html'),
         celulas: resolve(import.meta.dirname, 'celulas.html'),
+        clientes: resolve(import.meta.dirname, 'clientes.html'),
       },
     },
   },

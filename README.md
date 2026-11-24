@@ -6,9 +6,14 @@ Panel interno de Boombap, publicado en **panel.boombap.cl** (VPS con Plesk). Los
 |---|---|
 | `/` | **Tareas**: lo que hay que hacer a mano, agrupado por día (Atrasadas, Hoy, Mañana, Esta semana…). Usa la misma tabla `tasks` de Noise |
 | `/bandeja` | **Bandeja**: todo lo que espera la decisión de Manuel, con Aprobar / Pedir cambio / Rechazar |
+| `/clientes` | **Clientes**: la matriz de Noise (`companies`) con contactos, servicios, facturación, cuentas de pauta, tareas y decisiones. Se editan estado, ubicación, web y carpetas de Drive |
 | `/celulas` | Células, clientes, calendario Meta Timing y memoria, con tareas y decisiones pendientes por cliente |
 
-Las tres páginas comparten el riel lateral con contadores (tareas de hoy + atrasadas, decisiones pendientes) y el filtro por cliente (`?cliente=Nombre` en Tareas y Bandeja).
+Todas las páginas comparten el **menú lateral** (`src/lib/menu.js`): cada sección con título, descripción, contador y submenú. En escritorio se expande o se contrae a íconos (el submenú aparece al pasar el cursor); en pantallas angostas es una barra superior con menú deslizable. Los enlaces del submenú usan la dirección (`/?vista=hoy`, `/bandeja?tab=errores`, `/clientes?ver=pendientes`), así que se pueden guardar y compartir.
+
+### Timer
+
+Cada tarea abierta tiene ▶ para medir tiempo. El timer se guarda en Supabase (`task_time_logs`), no en el navegador: sigue corriendo si cambias de página o de dispositivo y se ve en el menú. Un timer por persona: al iniciar otro se detiene el anterior; al completar o descartar la tarea se detiene solo. El total queda en `tasks.time_spent` (minutos, igual que Noise) y se puede ajustar a mano al editar la tarea. Funciones: `timer_actual`, `timer_iniciar`, `timer_detener`, `timer_ajustar`.
 
 ## Tareas
 
@@ -95,7 +100,7 @@ Cada cambio en `main` se compila con GitHub Actions y queda en la rama `publicad
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173 (Bandeja en /bandeja.html, Células en /celulas.html)
+npm run dev      # http://localhost:5173 (Bandeja en /bandeja.html, Clientes en /clientes.html, Células en /celulas.html)
 npm run build    # deja el sitio en dist/
 ```
 

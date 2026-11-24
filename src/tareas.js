@@ -3,17 +3,18 @@
 import './acceso.css';
 import './panel.css';
 import './tareas.css';
-import { sb, exigirSesion, salir } from './lib/acceso.js';
-import { pintarRiel, actualizarContadores } from './lib/riel.js';
+import { sb, exigirSesion } from './lib/acceso.js';
+import { iniciarMenu, actualizarContadores, alNavegar, refrescarMenu } from './lib/menu.js';
+import { timerActual, alCambiarTimer, iniciarTimer, detenerTimer, ajustarTiempo, formatoDuracion, segundosCorriendo } from './lib/timer.js';
 import { esc, usarClientes, claveCliente, avatar, chipsClientes } from './lib/clientes.js';
 
 const $ = id => document.getElementById(id);
 const TZ = 'America/Santiago';
-const CAMPOS = 'id,title,description,status,priority,category,scheduled_date,client_id,assigned_to,parent_task_id,origen,origen_ref,enlaces,aprobacion_id,completed_at,created_at,estimated_time,ticket_id,lead_id';
+const CAMPOS = 'id,title,description,status,priority,category,scheduled_date,client_id,assigned_to,parent_task_id,origen,origen_ref,enlaces,aprobacion_id,completed_at,created_at,estimated_time,time_spent,ticket_id,lead_id';
 
 const est = {
   yo: null, tareas: [], padres: new Map(), empresas: [], perfiles: [], categorias: [],
-  tab: 'abiertas', abierta: null, editando: null, nuevaFecha: 0, ocupado: false,
+  tab: 'abiertas', abierta: null, editando: null, nuevaFecha: 0, ocupado: false, vista: '', logsHoy: [],
 };
 
 /* ---------- filtros ---------- */
@@ -23,7 +24,7 @@ const filtro = (() => {
   try { return { ...base, ...JSON.parse(localStorage.getItem(CLAVE) || '{}'), texto: '' }; } catch { return base; }
 })();
 const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify({ ...filtro, texto: '' })); } catch { /* sin almacenamiento */ } };
-const hayFiltro = () => !!(filtro.cliente || filtro.resp || filtro.origen || filtro.prio || filtro.texto);
+const hayFiltro = () => !!(filtro.cliente || filtro.resp || filtro.origen || filtro.prio || filtro.texto || est.vista);
 
 /* ---------- fechas (las de Noise son solo día: se usa la parte AAAA-MM-DD) ---------- */
 const hoyISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
@@ -61,6 +62,7 @@ async function cargar(silencioso) {
     return;
   }
   est.tareas = [...ab.data, ...he.data];
+  await cargarHoy();
   // Títulos de las tareas madre que no vinieron (por ejemplo, ya completadas)
   const faltan = [...new Set(est.tareas.map(t => t.parent_task_id).filter(id => id && !est.tareas.some(x => x.id === id) && !est.padres.has(id)))];
   if (faltan.length) {
@@ -99,6 +101,12 @@ function pasa(t) {
   if (filtro.origen === 'manual' && t.origen) return false;
   if (filtro.origen === 'agente' && !t.origen) return false;
   if (filtro.prio && t.priority !== filtro.prio) return false;
+  if (est.vista && est.tab === 'abiertas') {
+    const d = diaDe(t), h = hoyISO();
+    if (est.vista === 'hoy' && d !== h) return false;
+    if (est.vista === 'atrasadas' && !(d && d < h)) return false;
+    if (est.vista === 'semana' && !(d && d >= h && d <= finSemana(h))) return false;
+  }
   if (filtro.texto) {
     const q = filtro.texto.toLowerCase();
     if (!`${t.title} ${t.description || ''} ${nombreCliente(t)}`.toLowerCase().includes(q)) return false;
@@ -139,6 +147,7 @@ function filaTarea(t, hijos) {
   const subsHechas = subs.filter(s => s.status === 'completed').length;
   const enl = (Array.isArray(t.enlaces) ? t.enlaces : []).filter(e => /^https:\/\//.test(e?.u || ''));
   const abiertaAqui = est.abierta === t.id;
+  const tm = timerActual(), corre = tm?.task_id === t.id;
   const meta = [
     cli ? `<span class="m-cli">${avatar(cli, 'xs')}${esc(cli)}</span>` : '',
     d ? `<span class="m-fecha${atrasada ? ' tarde' : ''}">${atrasada ? `${relativo(d)} · ${diasAtraso(d)} d` : relativo(d)}</span>` : '',
@@ -149,9 +158,10 @@ function filaTarea(t, hijos) {
     subs.length ? `<span class="m-subs">${subsHechas}/${subs.length}</span>` : '',
     madre ? `<span class="m-madre">de «${esc(madre.title)}»</span>` : '',
     t.ticket_id ? '<span class="m-ticket">Ticket</span>' : '',
+    (t.time_spent > 0 && !corre) ? `<span class="m-tiempo" title="Tiempo registrado">${formatoDuracion(t.time_spent * 60)}</span>` : '',
     enl.length && !abiertaAqui ? `<span class="m-enl">${enl.length} ${enl.length === 1 ? 'enlace' : 'enlaces'}</span>` : '',
   ].filter(Boolean).join('');
-  return `<li class="t${hecha ? ' hecha' : ''}${abiertaAqui ? ' abierta' : ''}" data-id="${t.id}">
+  return `<li class="t${hecha ? ' hecha' : ''}${abiertaAqui ? ' abierta' : ''}${corre ? ' corriendo' : ''}" data-id="${t.id}">
     <button class="chk" type="button" data-do="${hecha ? 'reabrir' : 'completar'}" aria-label="${hecha ? 'Marcar como pendiente' : 'Completar'}: ${esc(t.title)}"><svg viewBox="0 0 24 24"><path d="m6 12.5 4 4 8-9"/></svg></button>
     <div class="t-cuerpo">
       <button class="t-tit" type="button" data-do="abrir" aria-expanded="${abiertaAqui}">${esc(t.title)}</button>
@@ -159,7 +169,16 @@ function filaTarea(t, hijos) {
       ${abiertaAqui ? detalle(t, subs, enl) : ''}
     </div>
     ${!hecha && !abiertaAqui ? `<div class="t-rap"><button type="button" class="mini" data-do="posponer" data-a="1" title="Pasar a mañana">Mañana</button><button type="button" class="mini" data-do="posponer" data-a="lunes" title="Pasar al lunes">Lunes</button></div>` : ''}
+    ${!hecha ? botonTimer(t, corre) : ''}
   </li>`;
+}
+
+const IC_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>';
+const IC_STOP = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></svg>';
+function botonTimer(t, corre) {
+  return corre
+    ? `<button type="button" class="tmr on" data-do="timer-detener" aria-label="Detener timer de ${esc(t.title)}" title="Detener timer">${IC_STOP}<span class="num" data-timer-vivo="${t.id}" data-base="${t.time_spent || 0}">${formatoDuracion((timerActual()?.acumulado_seg ?? 0) + segundosCorriendo(), true)}</span></button>`
+    : `<button type="button" class="tmr" data-do="timer-iniciar" aria-label="Iniciar timer de ${esc(t.title)}" title="Iniciar timer">${IC_PLAY}</button>`;
 }
 
 function detalle(t, subs, enl) {
@@ -180,7 +199,7 @@ function detalle(t, subs, enl) {
       <button class="b sm" type="button" data-do="posponer" data-a="lunes">Lunes</button>
       <button class="b sm no-l" type="button" data-do="cancelar">Descartar</button>
     </div>
-    <p class="t-pie">Creada ${esc(etiquetaDia(t.created_at.slice(0, 10)))}${t.origen ? ` por ${esc(t.origen)}` : ''}${t.estimated_time ? ` · estimado ${t.estimated_time} min` : ''}</p>
+    <p class="t-pie">Creada ${esc(etiquetaDia(t.created_at.slice(0, 10)))}${t.origen ? ` por ${esc(t.origen)}` : ''} · tiempo registrado ${formatoDuracion((t.time_spent || 0) * 60)}${t.estimated_time ? ` de ${formatoDuracion(t.estimated_time * 60)} estimado` : ''}</p>
   </div>`;
 }
 
@@ -194,6 +213,8 @@ function formEditar(t) {
       <label>Fecha<input type="date" name="fecha" value="${esc(diaDe(t))}"></label>
       <label>Responsable<select name="assigned_to">${opt('', 'Sin asignar', !t.assigned_to)}${est.perfiles.map(p => opt(p.id, p.full_name.split(' ')[0], p.id === t.assigned_to)).join('')}</select></label>
       <label>Prioridad<select name="priority">${['alta', 'media', 'baja'].map(p => opt(p, p[0].toUpperCase() + p.slice(1), p === t.priority)).join('')}</select></label>
+      <label>Tiempo registrado (min)<input type="number" name="minutos" min="0" max="100000" step="5" value="${t.time_spent || 0}"></label>
+      <label>Tiempo estimado (min)<input type="number" name="estimado" min="0" max="100000" step="5" value="${t.estimated_time || 0}"></label>
       <label>Categoría<select name="category">${opt('', 'Sin categoría', !t.category)}${est.categorias.map(c => opt(c.name, c.name, c.name === t.category)).join('')}${t.category && !est.categorias.some(c => c.name === t.category) ? opt(t.category, t.category, true) : ''}</select></label>
     </div>
     <div class="acc"><button class="b ok sm" type="submit">Guardar</button><button class="b sm" type="button" data-do="cerrar-edicion">Cancelar</button></div>
@@ -236,7 +257,8 @@ function render() {
     if (e) items.unshift({ nombre: e.name, n: 0 });
   }
   $('clientes').innerHTML = chipsClientes(items, filtro.cliente, abiertas.length);
-  $('f-resp').value = filtro.resp; $('f-origen').value = filtro.origen; $('f-prio').value = filtro.prio;
+  $('f-resp').value = filtro.resp; $('f-origen').value = filtro.origen; $('f-prio').value = filtro.prio; $('f-vista').value = est.vista;
+  renderTiempo();
   $('f-limpiar').hidden = !hayFiltro();
 
   let html = '';
@@ -246,9 +268,11 @@ function render() {
       if (!g[k].length) continue;
       html += `<section class="grupo g-${k}"><h2>${NOMBRES[k]} <span>${g[k].length}</span></h2><ul>${g[k].map(t => filaTarea(t, hijos)).join('')}</ul></section>`;
     }
-    if (!html) html = hayFiltro()
+    const vacio = hayFiltro()
       ? '<div class="vacio"><b>Nada con estos filtros</b><span>Prueba con otro cliente o quita los filtros.</span></div>'
-      : '<div class="vacio"><b>Todo al día</b><span>Agrega una tarea arriba o espera las que creen los agentes.</span></div>';
+      : '<div class="vacio"><b>Todo al día</b><span>Agrega una tarea o espera las que creen los agentes.</span></div>';
+    const aviso = est.vista ? `<p class="vista-on">Mostrando <b>${{ hoy: 'solo hoy', atrasadas: 'solo atrasadas', semana: 'esta semana' }[est.vista]}</b> <button type="button" class="mini" data-do="sin-vista">Ver todas</button></p>` : '';
+    html = aviso + (html || vacio);
   } else {
     const porDia = new Map();
     for (const t of vis.sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))) {
@@ -261,6 +285,67 @@ function render() {
   }
   $('lista').innerHTML = html;
   if (est.editando) document.querySelector('.t-edit input[name=title]')?.focus();
+}
+
+/* ---------- tiempo ---------- */
+async function cargarHoy() {
+  const desde = new Date(Date.now() - 36 * 3600000).toISOString();
+  const { data } = await sb.from('task_time_logs').select('task_id,start_time,end_time,duration').eq('user_id', est.yo.id).gte('start_time', desde).limit(500);
+  const h = hoyISO(), fmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ });
+  est.logsHoy = (data || []).filter(l => fmt.format(new Date(l.start_time)) === h && l.end_time && l.duration > 0);
+}
+function renderTiempo() {
+  const el = $('tiempo'); if (!el) return;
+  const tm = timerActual();
+  const porTarea = new Map();
+  for (const l of est.logsHoy) porTarea.set(l.task_id, (porTarea.get(l.task_id) || 0) + l.duration);
+  if (tm) porTarea.set(tm.task_id, (porTarea.get(tm.task_id) || 0)); // se suma en vivo abajo
+  const total = [...porTarea.values()].reduce((a, b) => a + b, 0);
+  const top = [...porTarea.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const tit = id => est.tareas.find(t => t.id === id)?.title || est.padres.get(id)?.title || 'Tarea';
+  el.innerHTML = `<p class="lado-tit">Tiempo</p>
+    ${tm ? `<div class="reloj-on"><span class="pulso" aria-hidden="true"></span><div><small>En curso</small><button type="button" class="link" data-ir="${esc(tm.task_id)}">${esc(tm.titulo)}</button></div><b class="num" data-timer-reloj>0:00</b><button type="button" class="b sm dark" data-do-t="detener">Detener</button></div>`
+          : '<p class="tiempo-vacio">Sin timer en curso. Toca ▶ en una tarea para medir su tiempo.</p>'}
+    <p class="tiempo-hoy">Hoy registraste <b class="num">${formatoDuracion(total)}</b>${tm ? ' + lo que corre ahora' : ''}</p>
+    ${top.length ? `<ul class="tiempo-lista">${top.map(([id, seg]) => `<li><button type="button" class="link" data-ir="${esc(id)}">${esc(tit(id))}</button><span class="num">${formatoDuracion(seg)}</span></li>`).join('')}</ul>` : ''}`;
+}
+$('tiempo').addEventListener('click', async ev => {
+  const ir = ev.target.closest('[data-ir]');
+  if (ir) { abrirTarea(ir.dataset.ir); return; }
+  if (ev.target.closest('[data-do-t=detener]')) {
+    try { const r = await detenerTimer(); toast(`Timer detenido · ${formatoDuracion((r?.tiempo_min || 0) * 60)} en total.`); } catch (e) { toast('No se pudo detener: ' + (e.message || '')); }
+  }
+});
+function abrirTarea(id) {
+  const t = est.tareas.find(x => x.id === id); if (!t) return;
+  est.tab = abierta(t) ? 'abiertas' : 'hechas'; est.vista = ''; est.abierta = id; est.editando = null;
+  if (filtro.cliente && claveCliente(nombreCliente(t)) !== filtro.cliente) filtro.cliente = '';
+  render();
+  document.querySelector(`li.t[data-id="${id}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+/* ---------- dirección (enlaces del menú) ---------- */
+function syncUrl() {
+  const q = new URLSearchParams();
+  if (est.tab === 'hechas') q.set('tab', 'hechas');
+  else if (est.vista) q.set('vista', est.vista);
+  history.replaceState(null, '', '/' + (q.toString() ? '?' + q : ''));
+  refrescarMenu();
+}
+function irA(u, empujar) {
+  const q = u.searchParams;
+  est.tab = q.get('tab') === 'hechas' ? 'hechas' : 'abiertas';
+  est.vista = ['hoy', 'atrasadas', 'semana'].includes(q.get('vista')) ? q.get('vista') : '';
+  if (q.get('origen') === 'agente' || q.get('origen') === 'manual') { filtro.origen = q.get('origen'); guardar(); }
+  else if (!q.toString()) { /* «Por hacer»: deja los filtros guardados */ }
+  if (q.get('cliente')) {
+    filtro.cliente = claveCliente(q.get('cliente'));
+    const e = est.empresas.find(e => claveCliente(e.name) === filtro.cliente); $('n-cliente').value = e?.id || ''; guardar();
+  }
+  est.abierta = null; est.editando = null;
+  if (empujar) syncUrl();
+  render();
+  if (q.get('tarea')) abrirTarea(q.get('tarea'));
 }
 
 /* ---------- acciones ---------- */
@@ -293,9 +378,18 @@ function fechaPara(a) {
 
 $('lista').addEventListener('click', async ev => {
   const b = ev.target.closest('[data-do]'); if (!b || b.tagName === 'FORM') return;
+  if (b.dataset.do === 'sin-vista') return irA(new URL('/', location.href), true);
   const li = b.closest('li.t'); const id = b.dataset.id || li?.dataset.id; if (!id) return;
   const hacer = b.dataset.do;
   if (hacer === 'abrir') { est.abierta = est.abierta === id ? null : id; est.editando = null; return render(); }
+  if (hacer === 'timer-iniciar' || hacer === 'timer-detener') {
+    b.disabled = true;
+    try {
+      if (hacer === 'timer-iniciar') { await iniciarTimer(id); toast('Timer iniciado.'); }
+      else { const r = await detenerTimer(); toast(`Timer detenido · ${formatoDuracion((r?.tiempo_min || 0) * 60)} en total.`); }
+    } catch (e) { b.disabled = false; toast('No se pudo cambiar el timer: ' + (e.message || '')); }
+    return;
+  }
   if (hacer === 'completar') return actualizar(id, { status: 'completed' }, 'Tarea completada.', true);
   if (hacer === 'reabrir') return actualizar(id, { status: 'pending' }, 'Tarea reabierta.');
   if (hacer === 'estado') return actualizar(id, { status: b.dataset.a });
@@ -314,8 +408,14 @@ $('lista').addEventListener('submit', async ev => {
       title: d.title.trim(), description: d.description.trim() || null,
       client_id: d.client_id || null, assigned_to: d.assigned_to || null,
       priority: d.priority, category: d.category || null, scheduled_date: d.fecha || null,
+      estimated_time: Math.max(0, Math.round(Number(d.estimado) || 0)),
     };
     est.editando = null;
+    const t = est.tareas.find(x => x.id === f.dataset.id);
+    const min = Math.max(0, Math.round(Number(d.minutos) || 0));
+    if (t && min !== (t.time_spent || 0)) {
+      try { t.time_spent = await ajustarTiempo(t.id, min); } catch (e) { toast('No se pudo ajustar el tiempo: ' + (e.message || '')); }
+    }
     return actualizar(f.dataset.id, cambios, 'Cambios guardados.');
   }
   if (f.dataset.do === 'subtarea') {
@@ -363,7 +463,7 @@ $('nueva').addEventListener('submit', async ev => {
 });
 
 // Pestañas y filtros
-$('tabs').addEventListener('click', ev => { const b = ev.target.closest('[role=tab]'); if (!b) return; est.tab = b.dataset.t; est.abierta = null; est.editando = null; render(); });
+$('tabs').addEventListener('click', ev => { const b = ev.target.closest('[role=tab]'); if (!b) return; est.tab = b.dataset.t; est.abierta = null; est.editando = null; if (est.tab === 'hechas') est.vista = ''; syncUrl(); render(); });
 $('clientes').addEventListener('click', ev => {
   const b = ev.target.closest('[data-cli]'); if (!b) return;
   filtro.cliente = filtro.cliente === b.dataset.cli ? '' : b.dataset.cli;
@@ -372,9 +472,9 @@ $('clientes').addEventListener('click', ev => {
   guardar(); render();
 });
 for (const [id, k] of [['f-resp', 'resp'], ['f-origen', 'origen'], ['f-prio', 'prio']]) $(id).addEventListener('change', ev => { filtro[k] = ev.target.value; guardar(); render(); });
+$('f-vista').addEventListener('change', ev => { est.vista = ev.target.value; est.tab = 'abiertas'; syncUrl(); render(); });
 $('f-texto').addEventListener('input', ev => { filtro.texto = ev.target.value.trim(); render(); });
-$('f-limpiar').addEventListener('click', () => { Object.assign(filtro, { cliente: '', resp: '', origen: '', prio: '', texto: '' }); $('f-texto').value = ''; $('n-cliente').value = ''; guardar(); render(); });
-$('salir').addEventListener('click', salir);
+$('f-limpiar').addEventListener('click', () => { Object.assign(filtro, { cliente: '', resp: '', origen: '', prio: '', texto: '' }); est.vista = ''; syncUrl(); $('f-texto').value = ''; $('n-cliente').value = ''; guardar(); render(); });
 document.addEventListener('keydown', ev => {
   if (ev.key === 'Escape' && (est.editando || est.abierta)) { est.editando = null; est.abierta = null; render(); }
   if (ev.key === 'n' && !ev.metaKey && !ev.ctrlKey && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) { ev.preventDefault(); $('n-titulo').focus(); }
@@ -382,12 +482,11 @@ document.addEventListener('keydown', ev => {
 
 /* ---------- inicio ---------- */
 est.yo = await exigirSesion();
-pintarRiel('tareas');
+iniciarMenu('tareas', est.yo);
 await cargarCatalogos();
-{ // Enlace directo desde Células: /?cliente=Alimor
-  const p = new URLSearchParams(location.search).get('cliente');
-  if (p) { filtro.cliente = claveCliente(p); const e = est.empresas.find(e => claveCliente(e.name) === filtro.cliente); $('n-cliente').value = e?.id || ''; history.replaceState(null, '', '/'); }
-}
 await cargar(false);
-setInterval(() => { if (!document.hidden && !est.editando && !document.activeElement?.closest?.('.nueva, .subs, .filtros')) cargar(true); }, 20000);
+irA(new URL(location.href));
+alNavegar(u => irA(u));
+alCambiarTimer(() => cargar(true));
+setInterval(() => { if (!document.hidden && !est.editando && !document.activeElement?.closest?.('.nueva, .subs, .filtros-lado')) cargar(true); }, 20000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !est.editando) cargar(true); });

@@ -27,7 +27,7 @@ a{color:inherit}
 .num{font-variant-numeric:tabular-nums}
 
 /* marco */
-.shell{max-width:1320px;margin:0 auto;padding-block:24px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:64px 236px minmax(0,1fr);gap:14px;align-items:start}
+.shell{max-width:1680px;margin:0 auto;padding:12px max(16px,env(safe-area-inset-right,0px)) 40px 0;display:grid;grid-template-columns:236px minmax(0,1fr);gap:14px;align-items:start}
 .rail{position:sticky;top:calc(16px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:12px}
 .rail-in{background:var(--rail);border-radius:22px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 14px 30px -16px rgba(0,0,0,.6)}
 .rail-in .logo{width:40px;height:44px;display:grid;place-items:center;margin-bottom:4px}.rail-in .logo img{width:30px;height:auto;display:block}
@@ -317,8 +317,9 @@ a.log:hover{border-color:var(--accent)}
 .job i{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--rail-muted);font-weight:500}
 .job .b{width:7px;height:7px;border-radius:50%;background:#ff5c85}
 
-@media (max-width:1100px){.shell{grid-template-columns:64px minmax(0,1fr)}.side{display:none}.cells,.adns{grid-template-columns:repeat(2,minmax(0,1fr))}.files{grid-template-columns:1fr}}
+@media (max-width:1100px){.shell{grid-template-columns:minmax(0,1fr)}.side{display:none}.cells,.adns{grid-template-columns:repeat(2,minmax(0,1fr))}.files{grid-template-columns:1fr}}
 @media (max-width:860px){.hero{grid-template-columns:1fr}.cols{grid-template-columns:1fr}.vitals{grid-template-columns:repeat(2,minmax(0,1fr))}.vital:nth-child(3){border-left:0}.vital:nth-child(n+3){border-top:1px solid var(--line)}}
+@media (max-width:899px){.shell{padding:4px 8px 40px}}
 @media (max-width:640px){.shell{grid-template-columns:minmax(0,1fr);gap:10px}.rail{position:static}.rail-in{flex-direction:row;justify-content:space-between;padding:8px}.rail-in .logo{margin:0}.rail-tag{display:none}.main{padding:14px;border-radius:22px}.cells,.duo,.adns{grid-template-columns:1fr}.vital .v{font-size:28px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
@@ -329,3 +330,6 @@ a.log:hover{border-color:var(--accent)}
 .cnt[hidden] { display: none !important; }
 .pc-link { cursor: pointer; margin-left: 4px; }
 .pc-link:hover { filter: brightness(.95); text-decoration: underline; }
+
+/* Con el menú expandido, la barra de células se oculta si no hay espacio */
+@media (max-width:1399px){html:not(.menu-corto) .shell{grid-template-columns:minmax(0,1fr)}html:not(.menu-corto) .side{display:none}}

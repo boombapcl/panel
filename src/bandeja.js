@@ -1,7 +1,7 @@
 import './acceso.css';
 import './panel.css';
-import { sb, exigirSesion, salir } from './lib/acceso.js';
-import { pintarRiel, actualizarContadores } from './lib/riel.js';
+import { sb, exigirSesion } from './lib/acceso.js';
+import { iniciarMenu, actualizarContadores, alNavegar, refrescarMenu } from './lib/menu.js';
 import { esc, usarClientes, claveCliente, avatar, chipsClientes } from './lib/clientes.js';
 
 const $ = id => document.getElementById(id);
@@ -307,6 +307,8 @@ async function ejecutar(fn, args, exito) {
 $('tabs').addEventListener('click', ev => {
   const b = ev.target.closest('[role=tab]'); if (!b) return;
   estado.tab = b.dataset.t; estado.abierto = null; aviso(''); render();
+  history.replaceState(null, '', estado.tab === 'pendientes' ? '/bandeja' : '/bandeja?tab=' + estado.tab);
+  refrescarMenu();
 });
 $('lista').addEventListener('click', async ev => {
   const b = ev.target.closest('button[data-do]'); if (!b) return;
@@ -331,7 +333,6 @@ $('lista').addEventListener('click', async ev => {
     return ejecutar('bandeja_accion', { p_id: ids[0], p_que: 'descartar' }, 'Descartada.');
   }
 });
-$('salir').addEventListener('click', salir);
 $('clientes').addEventListener('click', ev => {
   const b = ev.target.closest('[data-cli]'); if (!b) return;
   filtro.cliente = filtro.cliente === b.dataset.cli ? '' : b.dataset.cli; guardarFiltros(); estado.abierto = null; render();
@@ -344,12 +345,19 @@ $('f-limpiar').addEventListener('click', () => {
 });
 
 /* ---------- inicio ---------- */
+const TABS = ['pendientes', 'curso', 'errores', 'historial'];
+function desdeUrl(u) {
+  const t = u.searchParams.get('tab');
+  estado.tab = TABS.includes(t) ? t : 'pendientes'; estado.abierto = null;
+}
 estado.usuario = await exigirSesion();
-pintarRiel('bandeja');
+iniciarMenu('bandeja', estado.usuario);
+desdeUrl(new URL(location.href));
+alNavegar(u => { desdeUrl(u); aviso(''); render(); });
 await cargar(false);
 { // Enlace directo desde Células: /bandeja?cliente=Alimor
   const p = new URLSearchParams(location.search).get('cliente');
-  if (p && estado.datos) { filtro.cliente = claveCliente(p); guardarFiltros(); history.replaceState(null, '', '/bandeja'); render(); }
+  if (p && estado.datos) { filtro.cliente = claveCliente(p); guardarFiltros(); history.replaceState(null, '', '/bandeja' + (estado.tab !== 'pendientes' ? '?tab=' + estado.tab : '')); render(); }
 }
 setInterval(() => { if (!document.hidden) cargar(true); }, 20000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) cargar(true); });
