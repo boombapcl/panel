@@ -4,6 +4,7 @@
 import './menu.css';
 import { sb, salir } from './acceso.js';
 import { cargarTimer, alCambiarTimer, detenerTimer, timerActual } from './timer.js';
+import { montarReloj } from './reloj.js';
 
 const I = {
   tareas: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="m8.5 12.2 2.4 2.4 4.8-5"/>',
@@ -136,6 +137,7 @@ function barraMovil() {
 
 function pintarTimer(t) {
   const el = document.getElementById('m-timer'); if (!el) return;
+  t = null; // la tarea activa se muestra en el reloj flotante
   el.hidden = !t;
   document.documentElement.classList.toggle('timer-on', !!t);
   if (!t) { el.innerHTML = ''; return; }
@@ -221,6 +223,7 @@ export async function iniciarMenu(id, user) {
   pintar();
   eventos();
   alCambiarTimer(pintarTimer);
+  montarReloj();
   actualizarContadores();
   cargarTimer();
   setInterval(() => { if (!document.hidden) actualizarContadores(); }, 30000);

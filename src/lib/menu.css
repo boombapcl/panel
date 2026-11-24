@@ -135,5 +135,44 @@ html.menu-corto .m-yo { flex: none; }
   .m-barra-cnt .m-cnt { position: absolute; top: 0; right: -2px; min-width: 17px; height: 17px; line-height: 17px; font-size: 9.5px; padding: 0 4px; box-shadow: 0 0 0 2px #2f2f31; }
   html.menu-abierto .m-fondo { display: block; position: fixed; inset: 0; z-index: 38; background: rgba(20, 20, 18, .45); }
 }
-@media (prefers-reduced-motion: reduce) { .menu, body.con-menu, .m-exp svg { transition: none; } .m-punto { animation: none; } }
+/* Reloj flotante del timer */
+.reloj { position: fixed; z-index: 42; right: 20px; bottom: 20px; width: 352px; background: #2f2f31; color: #f4f4f1; border-radius: 20px; padding: 14px 16px 16px; box-shadow: 0 24px 50px -18px rgba(0, 0, 0, .65); font-family: "Manrope", system-ui, sans-serif; display: flex; flex-direction: column; gap: 4px; }
+.reloj svg { width: 16px; height: 16px; fill: currentColor; flex: none; }
+.reloj svg.trazo { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.reloj button { font: inherit; color: inherit; cursor: pointer; }
+.reloj :focus-visible { outline: 2px solid var(--m-accent); outline-offset: 2px; }
+.r-cab { display: flex; justify-content: space-between; align-items: center; }
+.r-estado { display: inline-flex; align-items: center; gap: 7px; font: 600 10.5px/1 var(--m-mono); letter-spacing: .12em; text-transform: uppercase; color: #f0a5b8; }
+.reloj.pausa .r-estado { color: #e9c46a; }
+.r-punto { width: 9px; height: 9px; border-radius: 50%; background: var(--m-accent); animation: m-late 1.6s ease-in-out infinite; flex: none; }
+.reloj.pausa .r-punto { background: #e9c46a; animation: none; }
+.r-ic { width: 30px; height: 30px; border-radius: 9px; border: 0; background: none; display: grid; place-items: center; color: var(--m-muted); }
+.r-ic:hover { background: #3a3a3d; color: #fff; }
+.r-tit { color: #fff; text-decoration: none; font-weight: 700; font-size: 15px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 4px; }
+.r-tit:hover { text-decoration: underline; }
+.r-cli { font-size: 12.5px; color: var(--m-muted); }
+.r-tiempo { font: 600 44px/1.05 var(--m-mono); letter-spacing: -.02em; margin: 8px 0 10px; font-variant-numeric: tabular-nums; }
+.reloj.pausa .r-tiempo { color: #cfcfca; }
+.r-acc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.r-b { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 38px; padding: 0 6px; white-space: nowrap; border-radius: 11px; border: 1px solid #4a4a4f; background: #3a3a3d; font-weight: 650 !important; font-size: 13px !important; }
+.r-b:hover { background: #45454a; }
+.r-b.r-prim { background: var(--m-accent); border-color: var(--m-accent); color: #fff; }
+.r-b.r-prim:hover { filter: brightness(1.08); }
+.reloj.pausa .r-b.r-prim { background: #f4f4f1; border-color: #f4f4f1; color: #2f2f31; }
+.r-b.ok { color: #8be0b0; }
+.r-b:disabled { opacity: .6; cursor: progress; }
+.reloj.min { width: auto; max-width: min(360px, calc(100vw - 40px)); padding: 0; border-radius: 99px; }
+.r-pill { display: flex; align-items: center; gap: 10px; padding: 10px 14px 10px 16px; border: 0; background: none; min-width: 0; }
+.r-pill b { font: 600 17px/1 var(--m-mono); }
+.r-pill-t { font-size: 13px; color: var(--m-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.r-pill svg { color: var(--m-muted); }
+html.con-reloj .toast { bottom: 250px; }
+html.con-reloj .marco, html.con-reloj .shell { padding-bottom: 240px; }
+@media (max-width: 640px) {
+  .reloj { right: 8px; left: 8px; bottom: 8px; width: auto; padding: 12px 14px 14px; }
+  .reloj.min { left: auto; }
+  .r-tiempo { font-size: 36px; margin: 4px 0 8px; }
+}
+@media print { .reloj { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .menu, body.con-menu, .m-exp svg { transition: none; } .m-punto, .r-punto { animation: none; } }
 @media print { .menu, .m-barra { display: none !important; } body.con-menu { padding: 0; } }

@@ -32,7 +32,10 @@ const filtro = (() => {
 })();
 function guardarFiltros() { try { localStorage.setItem(CLAVE_FILTROS, JSON.stringify(filtro)); } catch { /* sin almacenamiento */ } }
 const tipoDe = x => x.celula || 'Pauta';
-const platDe = x => x.plataforma_efectiva || x.plataforma || 'Meta';
+// Plataforma de una decisión: la que trae; si no, Pauta y Boost IG son Meta (o Google si el título lo dice).
+const platDe = x => x.plataforma
+  || ((x.celula === 'Pauta' || x.celula === 'Boost IG') ? (/google/i.test(`${x.titulo} ${x.detalle || ''}`) ? 'Google' : 'Meta') : null)
+  || x.plataforma_efectiva || 'Meta';
 const fechaDe = x => x.decidida_at || x.ejecutada_at || x.created_at;
 function pasa(x) {
   if (filtro.cliente && claveCliente(x.cliente || x.cuenta) !== filtro.cliente) return false;
@@ -216,7 +219,7 @@ function render() {
   const nTotal = d.pendientes.length;
   $('n-pendientes').textContent = nP; $('n-curso').textContent = nC; $('n-errores').textContent = nE;
   $('n-pendientes').classList.toggle('hay', nP > 0); $('n-errores').classList.toggle('hay', nE > 0);
-  document.title = `${nTotal ? `(${nTotal}) ` : ''}Bandeja · Panel Células`;
+  document.title = `${nTotal ? `(${nTotal}) ` : ''}Bandeja · Panel Boombap`;
   $('sub').textContent = nTotal
     ? `${nTotal === 1 ? 'Hay 1 decisión esperándote' : `Hay ${nTotal} decisiones esperándote`}${hayFiltro() ? ` (${nP} con estos filtros)` : ''}.`
     : 'No hay nada esperando tu decisión.';
@@ -224,7 +227,11 @@ function render() {
 
   let h = '';
   if (estado.tab === 'pendientes') {
-    h = nP ? pend.map(tarjetaAprobacion).join('') : (hayFiltro() ? vacio('Nada con estos filtros', 'Prueba con otro cliente o quita los filtros.') : vacio('Bandeja al día', 'Cuando un agente necesite tu decisión, aparece aquí.'));
+    const ocultas = nTotal - nP;
+    h = (nP && ocultas > 0 ? `<p class="ocultas">${ocultas === 1 ? 'Hay 1 decisión oculta' : `Hay ${ocultas} decisiones ocultas`} por los filtros. <button type="button" class="mini" data-quitar-filtros>Ver todas</button></p>` : '')
+      + (nP ? pend.map(tarjetaAprobacion).join('') : (hayFiltro()
+        ? vacio('Nada con estos filtros', `${nTotal === 1 ? 'La decisión pendiente queda' : `Las ${nTotal} decisiones pendientes quedan`} fuera de los filtros elegidos.`) + (nTotal ? '<p class="ocultas centro"><button type="button" class="b sm dark" data-quitar-filtros>Quitar filtros y ver todo</button></p>' : '')
+        : vacio('Bandeja al día', 'Cuando un agente necesite tu decisión, aparece aquí.')));
   } else if (estado.tab === 'curso') {
     if (!nC) h = vacio('Nada en curso', 'Lo que apruebes se ejecuta al momento y pasa al historial.');
     else {
@@ -340,9 +347,9 @@ $('clientes').addEventListener('click', ev => {
 for (const [id, k] of [['f-tipo', 'tipo'], ['f-plat', 'plat'], ['f-fecha', 'fecha']]) {
   $(id).addEventListener('change', ev => { filtro[k] = ev.target.value; guardarFiltros(); estado.abierto = null; render(); });
 }
-$('f-limpiar').addEventListener('click', () => {
-  Object.assign(filtro, { cliente: '', tipo: '', plat: '', fecha: '' }); guardarFiltros(); render();
-});
+const quitarFiltros = () => { Object.assign(filtro, { cliente: '', tipo: '', plat: '', fecha: '' }); guardarFiltros(); render(); };
+$('f-limpiar').addEventListener('click', quitarFiltros);
+$('lista').addEventListener('click', ev => { if (ev.target.closest('[data-quitar-filtros]')) quitarFiltros(); });
 
 /* ---------- inicio ---------- */
 const TABS = ['pendientes', 'curso', 'errores', 'historial'];

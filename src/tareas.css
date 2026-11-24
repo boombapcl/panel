@@ -110,7 +110,6 @@
 .reloj-on small { display: block; font-size: 11px; font-weight: 700; color: #b3123a; text-transform: uppercase; letter-spacing: .06em; }
 .reloj-on .link { display: block; font-weight: 700; font-size: 14px; }
 .reloj-on > b { font: 600 20px/1 var(--mono); color: #9c1035; }
-.reloj-on .b { grid-column: 1 / -1; }
 .pulso { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: latido 1.6s ease-in-out infinite; }
 @keyframes latido { 50% { opacity: .3; } }
 
@@ -120,8 +119,16 @@
 .tmr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tmr.on { background: var(--accent); border-color: var(--accent); color: #fff; padding: 0 10px; }
 .tmr.on:hover { filter: brightness(1.08); color: #fff; }
-.t:not(:hover):not(:focus-within):not(.corriendo) .tmr:not(.on) { opacity: .45; }
 .t.corriendo { background: #fff7f9; box-shadow: inset 3px 0 0 var(--accent); }
+.t.en-pausa { box-shadow: inset 3px 0 0 #d9a520; }
+.tmr { color: var(--ink); }
+.tmr-t { font-family: var(--sans); font-size: 12.5px; font-weight: 650; }
+.tmr.pausa { background: #fff8e6; border-color: #f0d27a; color: #8a6100; }
+.reloj-on.pausa { background: #fff8e6; border-color: #f0d27a; }
+.reloj-on.pausa small { color: #8a6100; }
+.reloj-on.pausa .pulso { background: #d9a520; animation: none; }
+.reloj-on.pausa > b { color: #8a6100; }
+.reloj-acc { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .m-tiempo { font-family: var(--mono); font-size: 11.5px; }
 .m-tiempo::before { content: "⏱"; font-family: var(--sans); }
 .vista-on { font-size: 13.5px; color: var(--muted); display: flex; align-items: center; gap: 8px; margin: 0 2px -6px; }
@@ -137,7 +144,7 @@
 }
 @media (max-width: 640px) {
   .t-lado { grid-template-columns: 1fr; }
-  .t:not(:hover):not(:focus-within):not(.corriendo) .tmr:not(.on) { opacity: .7; }
+  .tmr-t { display: none; }
   .nueva-opc .b { margin-left: 0; flex: 1 1 100%; }
   .nueva-opc select { flex: 1 1 40%; max-width: none; }
   .t-rap { display: none !important; }

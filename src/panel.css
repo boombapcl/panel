@@ -140,3 +140,6 @@ td small { display: block; color: var(--muted); font-size: 12px; overflow-wrap: 
   .acc .b { flex: 1 1 auto; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.ocultas { grid-column: 1 / -1; font-size: 13.5px; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ocultas.centro { justify-content: center; margin-top: -4px; }

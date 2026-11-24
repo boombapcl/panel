@@ -5,7 +5,7 @@ import './panel.css';
 import './tareas.css';
 import { sb, exigirSesion } from './lib/acceso.js';
 import { iniciarMenu, actualizarContadores, alNavegar, refrescarMenu } from './lib/menu.js';
-import { timerActual, alCambiarTimer, iniciarTimer, detenerTimer, ajustarTiempo, formatoDuracion, segundosCorriendo } from './lib/timer.js';
+import { timerActual, timerPausado, alCambiarTimer, iniciarTimer, detenerTimer, pausarTimer, reanudarTimer, ajustarTiempo, formatoDuracion, segundosCorriendo } from './lib/timer.js';
 import { esc, usarClientes, claveCliente, avatar, chipsClientes } from './lib/clientes.js';
 
 const $ = id => document.getElementById(id);
@@ -147,7 +147,7 @@ function filaTarea(t, hijos) {
   const subsHechas = subs.filter(s => s.status === 'completed').length;
   const enl = (Array.isArray(t.enlaces) ? t.enlaces : []).filter(e => /^https:\/\//.test(e?.u || ''));
   const abiertaAqui = est.abierta === t.id;
-  const tm = timerActual(), corre = tm?.task_id === t.id;
+  const tm = timerActual(), corre = tm?.task_id === t.id, enPausa = !corre && timerPausado()?.task_id === t.id;
   const meta = [
     cli ? `<span class="m-cli">${avatar(cli, 'xs')}${esc(cli)}</span>` : '',
     d ? `<span class="m-fecha${atrasada ? ' tarde' : ''}">${atrasada ? `${relativo(d)} · ${diasAtraso(d)} d` : relativo(d)}</span>` : '',
@@ -161,24 +161,24 @@ function filaTarea(t, hijos) {
     (t.time_spent > 0 && !corre) ? `<span class="m-tiempo" title="Tiempo registrado">${formatoDuracion(t.time_spent * 60)}</span>` : '',
     enl.length && !abiertaAqui ? `<span class="m-enl">${enl.length} ${enl.length === 1 ? 'enlace' : 'enlaces'}</span>` : '',
   ].filter(Boolean).join('');
-  return `<li class="t${hecha ? ' hecha' : ''}${abiertaAqui ? ' abierta' : ''}${corre ? ' corriendo' : ''}" data-id="${t.id}">
+  return `<li class="t${hecha ? ' hecha' : ''}${abiertaAqui ? ' abierta' : ''}${corre ? ' corriendo' : ''}${enPausa ? ' en-pausa' : ''}" data-id="${t.id}">
     <button class="chk" type="button" data-do="${hecha ? 'reabrir' : 'completar'}" aria-label="${hecha ? 'Marcar como pendiente' : 'Completar'}: ${esc(t.title)}"><svg viewBox="0 0 24 24"><path d="m6 12.5 4 4 8-9"/></svg></button>
     <div class="t-cuerpo">
       <button class="t-tit" type="button" data-do="abrir" aria-expanded="${abiertaAqui}">${esc(t.title)}</button>
       ${meta ? `<div class="t-meta">${meta}</div>` : ''}
       ${abiertaAqui ? detalle(t, subs, enl) : ''}
     </div>
-    ${!hecha && !abiertaAqui ? `<div class="t-rap"><button type="button" class="mini" data-do="posponer" data-a="1" title="Pasar a mañana">Mañana</button><button type="button" class="mini" data-do="posponer" data-a="lunes" title="Pasar al lunes">Lunes</button></div>` : ''}
-    ${!hecha ? botonTimer(t, corre) : ''}
+    ${!hecha && !abiertaAqui ? `<div class="t-rap">${diaDe(t) !== hoyISO() ? '<button type="button" class="mini" data-do="posponer" data-a="0" title="Pasar a hoy">Hoy</button>' : ''}<button type="button" class="mini" data-do="posponer" data-a="1" title="Pasar a mañana">Mañana</button><button type="button" class="mini" data-do="posponer" data-a="lunes" title="Pasar al lunes">Lunes</button></div>` : ''}
+    ${!hecha ? botonTimer(t, corre, enPausa) : ''}
   </li>`;
 }
 
 const IC_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>';
-const IC_STOP = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></svg>';
-function botonTimer(t, corre) {
-  return corre
-    ? `<button type="button" class="tmr on" data-do="timer-detener" aria-label="Detener timer de ${esc(t.title)}" title="Detener timer">${IC_STOP}<span class="num" data-timer-vivo="${t.id}" data-base="${t.time_spent || 0}">${formatoDuracion((timerActual()?.acumulado_seg ?? 0) + segundosCorriendo(), true)}</span></button>`
-    : `<button type="button" class="tmr" data-do="timer-iniciar" aria-label="Iniciar timer de ${esc(t.title)}" title="Iniciar timer">${IC_PLAY}</button>`;
+const IC_PAUSA = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5.5" width="4" height="13" rx="1.2"/><rect x="13.5" y="5.5" width="4" height="13" rx="1.2"/></svg>';
+function botonTimer(t, corre, enPausa) {
+  if (corre) return `<button type="button" class="tmr on" data-do="timer-pausar" aria-label="Pausar timer de ${esc(t.title)}" title="Pausar">${IC_PAUSA}<span class="num" data-timer-vivo="${t.id}" data-base="${t.time_spent || 0}">${formatoDuracion((timerActual()?.acumulado_seg ?? 0) + segundosCorriendo(), true)}</span></button>`;
+  if (enPausa) return `<button type="button" class="tmr pausa" data-do="timer-reanudar" aria-label="Reanudar timer de ${esc(t.title)}" title="Reanudar">${IC_PLAY}<span class="num">${formatoDuracion(timerPausado()?.acumulado_seg || 0, true)}</span></button>`;
+  return `<button type="button" class="tmr" data-do="timer-iniciar" aria-label="Iniciar timer de ${esc(t.title)}" title="Iniciar timer">${IC_PLAY}<span class="tmr-t">Iniciar</span></button>`;
 }
 
 function detalle(t, subs, enl) {
@@ -195,6 +195,7 @@ function detalle(t, subs, enl) {
       <button class="b sm" type="button" data-do="editar">Editar</button>
       ${t.status === 'pending' ? '<button class="b sm" type="button" data-do="estado" data-a="in_progress">Marcar en curso</button>' : ''}
       ${t.status === 'in_progress' ? '<button class="b sm" type="button" data-do="estado" data-a="pending">Quitar «en curso»</button>' : ''}
+      ${diaDe(t) !== hoyISO() ? '<button class="b sm" type="button" data-do="posponer" data-a="0">Hoy</button>' : ''}
       <button class="b sm" type="button" data-do="posponer" data-a="1">Mañana</button>
       <button class="b sm" type="button" data-do="posponer" data-a="lunes">Lunes</button>
       <button class="b sm no-l" type="button" data-do="cancelar">Descartar</button>
@@ -296,7 +297,7 @@ async function cargarHoy() {
 }
 function renderTiempo() {
   const el = $('tiempo'); if (!el) return;
-  const tm = timerActual();
+  const tm = timerActual(), tp = timerPausado();
   const porTarea = new Map();
   for (const l of est.logsHoy) porTarea.set(l.task_id, (porTarea.get(l.task_id) || 0) + l.duration);
   if (tm) porTarea.set(tm.task_id, (porTarea.get(tm.task_id) || 0)); // se suma en vivo abajo
@@ -304,17 +305,24 @@ function renderTiempo() {
   const top = [...porTarea.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
   const tit = id => est.tareas.find(t => t.id === id)?.title || est.padres.get(id)?.title || 'Tarea';
   el.innerHTML = `<p class="lado-tit">Tiempo</p>
-    ${tm ? `<div class="reloj-on"><span class="pulso" aria-hidden="true"></span><div><small>En curso</small><button type="button" class="link" data-ir="${esc(tm.task_id)}">${esc(tm.titulo)}</button></div><b class="num" data-timer-reloj>0:00</b><button type="button" class="b sm dark" data-do-t="detener">Detener</button></div>`
-          : '<p class="tiempo-vacio">Sin timer en curso. Toca ▶ en una tarea para medir su tiempo.</p>'}
+    ${tm ? `<div class="reloj-on"><span class="pulso" aria-hidden="true"></span><div><small>En curso</small><button type="button" class="link" data-ir="${esc(tm.task_id)}">${esc(tm.titulo)}</button></div><b class="num" data-timer-reloj>${formatoDuracion(Number(tm.acumulado_seg || 0) + segundosCorriendo(), true)}</b><div class="reloj-acc"><button type="button" class="b sm dark" data-do-t="pausar">Pausar</button><button type="button" class="b sm" data-do-t="detener">Terminar</button></div></div>`
+      : tp ? `<div class="reloj-on pausa"><span class="pulso" aria-hidden="true"></span><div><small>En pausa</small><button type="button" class="link" data-ir="${esc(tp.task_id)}">${esc(tp.titulo)}</button></div><b class="num" data-timer-reloj>${formatoDuracion(tp.acumulado_seg || 0, true)}</b><div class="reloj-acc"><button type="button" class="b sm dark" data-do-t="reanudar">Reanudar</button><button type="button" class="b sm" data-do-t="terminar">Terminar</button></div></div>`
+      : '<p class="tiempo-vacio">Sin timer en curso. Toca ▶ Iniciar en una tarea para medir su tiempo.</p>'}
     <p class="tiempo-hoy">Hoy registraste <b class="num">${formatoDuracion(total)}</b>${tm ? ' + lo que corre ahora' : ''}</p>
     ${top.length ? `<ul class="tiempo-lista">${top.map(([id, seg]) => `<li><button type="button" class="link" data-ir="${esc(id)}">${esc(tit(id))}</button><span class="num">${formatoDuracion(seg)}</span></li>`).join('')}</ul>` : ''}`;
 }
 $('tiempo').addEventListener('click', async ev => {
   const ir = ev.target.closest('[data-ir]');
   if (ir) { abrirTarea(ir.dataset.ir); return; }
-  if (ev.target.closest('[data-do-t=detener]')) {
-    try { const r = await detenerTimer(); toast(`Timer detenido · ${formatoDuracion((r?.tiempo_min || 0) * 60)} en total.`); } catch (e) { toast('No se pudo detener: ' + (e.message || '')); }
-  }
+  const b = ev.target.closest('[data-do-t]'); if (!b) return;
+  b.disabled = true;
+  try {
+    const a = b.dataset.doT;
+    if (a === 'pausar') await pausarTimer();
+    else if (a === 'reanudar') await reanudarTimer();
+    else if (a === 'detener') { const r = await detenerTimer(); toast(`Timer terminado · ${formatoDuracion((r?.tiempo_min || 0) * 60)} en total.`); }
+    else if (a === 'terminar') { const { descartarPausa } = await import('./lib/timer.js'); descartarPausa(); }
+  } catch (e) { b.disabled = false; toast('No se pudo cambiar el timer: ' + (e.message || '')); }
 });
 function abrirTarea(id) {
   const t = est.tareas.find(x => x.id === id); if (!t) return;
@@ -382,10 +390,12 @@ $('lista').addEventListener('click', async ev => {
   const li = b.closest('li.t'); const id = b.dataset.id || li?.dataset.id; if (!id) return;
   const hacer = b.dataset.do;
   if (hacer === 'abrir') { est.abierta = est.abierta === id ? null : id; est.editando = null; return render(); }
-  if (hacer === 'timer-iniciar' || hacer === 'timer-detener') {
+  if (hacer.startsWith('timer-')) {
     b.disabled = true;
     try {
       if (hacer === 'timer-iniciar') { await iniciarTimer(id); toast('Timer iniciado.'); }
+      else if (hacer === 'timer-reanudar') { await reanudarTimer(); toast('Timer reanudado.'); }
+      else if (hacer === 'timer-pausar') { const r = await pausarTimer(); toast(`Timer en pausa · ${formatoDuracion((r?.tiempo_min || 0) * 60)} en total.`); }
       else { const r = await detenerTimer(); toast(`Timer detenido · ${formatoDuracion((r?.tiempo_min || 0) * 60)} en total.`); }
     } catch (e) { b.disabled = false; toast('No se pudo cambiar el timer: ' + (e.message || '')); }
     return;
@@ -488,5 +498,6 @@ await cargar(false);
 irA(new URL(location.href));
 alNavegar(u => irA(u));
 alCambiarTimer(() => cargar(true));
+window.addEventListener('tarea:completada', () => { toast('Tarea completada.'); cargar(true); });
 setInterval(() => { if (!document.hidden && !est.editando && !document.activeElement?.closest?.('.nueva, .subs, .filtros-lado')) cargar(true); }, 20000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && !est.editando) cargar(true); });
