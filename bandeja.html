@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Bandeja · Panel Boombap</title>
+<link rel="icon" href="/logo-marca.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+  <script type="module" crossorigin src="/assets/bandeja-CMQAuz-1.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/timer-sJphLht3.js">
+  <link rel="modulepreload" crossorigin href="/assets/clientes-DQyylC_b.js">
+  <link rel="stylesheet" crossorigin href="/assets/clientes-CDIdz1jp.css">
+  <link rel="stylesheet" crossorigin href="/assets/panel-D2FwaYT2.css">
+</head>
+<body>
+<div class="marco">
+  <main class="principal">
+    <header class="cab">
+      <div>
+        <p class="eyebrow">Panel · Boombap</p>
+        <h1>Bandeja</h1>
+        <p class="sub" id="sub">Todo lo que espera tu decisión, en un solo lugar.</p>
+      </div>
+      <div class="cab-der">
+        <span class="vivo" id="vivo">Cargando…</span>
+      </div>
+    </header>
+
+    <div class="aviso" id="aviso" role="status" hidden></div>
+
+    <div class="tabs" id="tabs" role="tablist" aria-label="Estado">
+      <button role="tab" data-t="pendientes" aria-selected="true">Pendientes <b id="n-pendientes">0</b></button>
+      <button role="tab" data-t="curso" aria-selected="false">En curso <b id="n-curso">0</b></button>
+      <button role="tab" data-t="errores" aria-selected="false">Errores <b id="n-errores">0</b></button>
+      <button role="tab" data-t="historial" aria-selected="false">Historial</button>
+    </div>
+
+    <section class="filtros" aria-label="Filtros">
+      <div class="clientes" id="clientes" role="group" aria-label="Cliente"></div>
+      <div class="selects">
+        <label>Tipo<select id="f-tipo"><option value="">Todos</option></select></label>
+        <label>Plataforma<select id="f-plat"><option value="">Todas</option><option>Meta</option><option>Google</option><option>Instagram</option><option>Web</option><option>Otra</option></select></label>
+        <label>Fecha<select id="f-fecha"><option value="">Todo</option><option value="hoy">Hoy</option><option value="7">Últimos 7 días</option><option value="30">Últimos 30 días</option></select></label>
+        <button class="btn limpiar" id="f-limpiar" type="button" hidden>Quitar filtros</button>
+      </div>
+    </section>
+
+    <div class="lista" id="lista" aria-live="polite"></div>
+  </main>
+</div>
+</body>
+</html>

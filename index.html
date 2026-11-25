@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Tareas · Panel Boombap</title>
+<link rel="icon" href="/logo-marca.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+  <script type="module" crossorigin src="/assets/index-DItwUJ5C.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/timer-sJphLht3.js">
+  <link rel="modulepreload" crossorigin href="/assets/clientes-DQyylC_b.js">
+  <link rel="stylesheet" crossorigin href="/assets/clientes-CDIdz1jp.css">
+  <link rel="stylesheet" crossorigin href="/assets/panel-D2FwaYT2.css">
+  <link rel="stylesheet" crossorigin href="/assets/tareas-SCNHXJU4.css">
+</head>
+<body>
+<div class="marco">
+  <main class="principal">
+    <header class="cab">
+      <div>
+        <p class="eyebrow">Panel · Boombap</p>
+        <h1>Tareas</h1>
+        <p class="sub" id="sub">Cargando…</p>
+      </div>
+      <div class="cab-der">
+        <span class="vivo" id="vivo">Cargando…</span>
+      </div>
+    </header>
+
+    <a class="aviso-bandeja" id="aviso-bandeja" href="/bandeja" hidden></a>
+
+    <div class="t-layout">
+      <aside class="t-lado" aria-label="Agregar, tiempo y filtros">
+        <form class="nueva" id="nueva" autocomplete="off">
+          <p class="lado-tit">Nueva tarea</p>
+          <label class="sr" for="n-titulo">Título de la nueva tarea</label>
+          <input id="n-titulo" name="titulo" placeholder="¿Qué hay que hacer? (Enter)" maxlength="300" required>
+          <div class="nueva-opc">
+            <select id="n-cliente" aria-label="Cliente"><option value="">Sin cliente</option></select>
+            <div class="dias" role="group" aria-label="Fecha">
+              <button type="button" data-dia="0" class="on">Hoy</button>
+              <button type="button" data-dia="1">Mañana</button>
+              <button type="button" data-dia="lunes">Lunes</button>
+              <input type="date" id="n-fecha" aria-label="Otra fecha">
+            </div>
+            <select id="n-resp" aria-label="Responsable"></select>
+            <select id="n-prio" aria-label="Prioridad"><option value="media">Prioridad media</option><option value="alta">Prioridad alta</option><option value="baja">Prioridad baja</option></select>
+            <button class="b ok" type="submit">Agregar</button>
+          </div>
+        </form>
+
+        <section class="tiempo" id="tiempo" aria-label="Tiempo" aria-live="polite"></section>
+
+        <section class="filtros-lado" aria-label="Filtros">
+          <p class="lado-tit">Filtros</p>
+          <div class="selects">
+            <label class="buscar">Buscar<input id="f-texto" type="search" placeholder="Título, detalle o cliente"></label>
+            <label>Vista<select id="f-vista"><option value="">Todas</option><option value="hoy">Hoy</option><option value="atrasadas">Atrasadas</option><option value="semana">Esta semana</option></select></label>
+            <label>Responsable<select id="f-resp"><option value="">Todos</option><option value="yo">Solo mías</option></select></label>
+            <label>Origen<select id="f-origen"><option value="">Todas</option><option value="manual">Creadas a mano</option><option value="agente">De agentes</option></select></label>
+            <label>Prioridad<select id="f-prio"><option value="">Todas</option><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select></label>
+            <button class="btn limpiar" id="f-limpiar" type="button" hidden>Quitar filtros</button>
+          </div>
+        </section>
+      </aside>
+
+      <div class="t-main">
+        <div class="tabs" id="tabs" role="tablist" aria-label="Vista">
+          <button role="tab" data-t="abiertas" aria-selected="true">Por hacer <b id="n-abiertas">0</b></button>
+          <button role="tab" data-t="hechas" aria-selected="false">Hechas <b id="n-hechas">0</b></button>
+        </div>
+        <div class="clientes" id="clientes" role="group" aria-label="Cliente"></div>
+        <div id="lista" class="grupos" aria-live="polite"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>
