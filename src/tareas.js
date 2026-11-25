@@ -77,12 +77,33 @@ async function cargar(silencioso) {
   if (!est.editando) render();
 }
 
+/* ---------- mes de campaña (Mes N de los planificadores) ---------- */
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function mesCampana(t) {
+  const ref = t.origen_ref || '';
+  if (!ref.startsWith('meta-timing:')) return null;
+  const id = (ref.replace(/-/g, '').match(/([0-9a-f]{32})(?:\?|$)/i) || [])[1];
+  const ciclo = id && est.ciclos?.get(id);
+  const m = String(ciclo || '').toLowerCase().match(/([a-záéíóú]+)\s+(\d{4})/);
+  if (!m || MESES.indexOf(m[1]) < 0) return null;
+  const cli = nombreCliente(t); if (!cli) return null;
+  const k = claveCliente(cli);
+  const fila = (est.meses || []).find(x => claveCliente(x.cliente) === k || k.startsWith(claveCliente(x.cliente)) || claveCliente(x.cliente).startsWith(k));
+  if (!fila) return null;
+  const [by, bm] = fila.ciclo_base.split('-').map(Number);
+  return fila.mes_base + (Number(m[2]) - by) * 12 + (MESES.indexOf(m[1]) + 1 - bm);
+}
+
 async function cargarCatalogos() {
-  const [emp, per, cat] = await Promise.all([
+  const [emp, per, cat, meses, hitos] = await Promise.all([
     sb.from('companies').select('id,name,logo_url,dashboard_logo_url,status').order('name'),
     sb.from('profiles').select('id,full_name'),
     sb.from('task_categories').select('name,color').order('name'),
+    sb.from('campana_meses').select('cliente,ciclo_base,mes_base'),
+    sb.from('notion_espejo').select('notion_id,props').eq('fuente', 'meta_timing'),
   ]);
+  est.meses = meses.data || [];
+  est.ciclos = new Map((hitos.data || []).map(h => [String(h.notion_id).replace(/-/g, ''), h.props?.Ciclo || '']));
   est.empresas = emp.data || [];
   est.perfiles = (per.data || []).filter(p => p.full_name);
   est.categorias = cat.data || [];
@@ -150,6 +171,7 @@ function filaTarea(t, hijos) {
   const tm = timerActual(), corre = tm?.task_id === t.id, enPausa = !corre && timerPausado()?.task_id === t.id;
   const meta = [
     cli ? `<span class="m-cli">${avatar(cli, 'xs')}${esc(cli)}</span>` : '',
+    mesCampana(t) ? `<span class="m-mes" title="Mes de campaña del cliente (planificador)">Mes ${mesCampana(t)}</span>` : '',
     d ? `<span class="m-fecha${atrasada ? ' tarde' : ''}">${atrasada ? `${relativo(d)} · ${diasAtraso(d)} d` : relativo(d)}</span>` : '',
     t.priority === 'alta' ? '<span class="m-prio">Alta</span>' : '',
     t.status === 'in_progress' ? '<span class="m-curso">En curso</span>' : '',

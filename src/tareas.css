@@ -151,3 +151,5 @@
   .selects .buscar input { min-width: 0; width: 100%; }
   .selects .buscar { flex: 1 1 100%; }
 }
+
+.m-mes { font-family: var(--mono); font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 6px; background: #f1ecfb; color: #5b3aa8; }
