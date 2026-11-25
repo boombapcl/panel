@@ -43,6 +43,7 @@ const SNAP_CEL=[
  {Nombre:'Marketing',Tipo:'Célula',Célula:'Marketing',Estado:'Por construir',Avance:0,Modelo:'Por definir','Siguiente paso':'ADN de Boombap como marca'},
  {Nombre:'Finanzas',Tipo:'Célula',Célula:'Finanzas',Estado:'Por construir',Avance:0,Modelo:'Por definir','Siguiente paso':'Calendario de facturación y cobranza'},
  {Nombre:'Personal (Dueño)',Tipo:'Célula',Célula:'Personal',Estado:'Piloto',Avance:.3,Modelo:'Opus','Siguiente paso':'Radar diario activo'},
+ {Nombre:'Dev & UI Web',Tipo:'Agente',Célula:'Producción',Estado:'Por construir',Avance:.2,Modelo:'Por definir','Siguiente paso':'Guardar la skill dev-ui-web y hacer un piloto con un primer sitio'},
  {Nombre:'Radar del dueño',Tipo:'Automatización',Célula:'Personal',Estado:'Activa',Avance:1,'Siguiente paso':'Lunes a viernes 7:52 por Slack'},
  {Nombre:'Aviso diario del ciclo',Tipo:'Automatización',Célula:'Operaciones',Estado:'Activa',Avance:1,'Siguiente paso':'Pasar a código en NOISE (sin modelo)'},
  {Nombre:'Reporte diario Ads',Tipo:'Automatización',Célula:'Pauta',Estado:'Activa',Avance:.8,'Siguiente paso':'Pasarlo a la nube para que no dependa del Mac'},
@@ -78,7 +79,7 @@ const NS='http://www.w3.org/2000/svg';
 const FICHA={
  Operaciones:{t:'Operaciones',i:'⚙️',tag:'Mantiene el ciclo mensual de cada cliente a tiempo.',fn:['Carga y vigila Meta Timing (D-15 → D+10)','Aviso diario del ciclo en #boombap','Onboarding de clientes nuevos','Borradores de correo por hito'],out:'Hitos al día y avisos claros a cada responsable',ask:'«¿Qué está atrasado esta semana?»'},
  'Planificación':{t:'Planificación',i:'🧭',tag:'Convierte el ADN de cada cliente en el planificador del mes.',fn:['Mantiene el ADN de cada cliente','Escribe el planificador en Notion','Copies y titulares con Persuasion Taxonomy','Metas y KPI por cuenta'],out:'Planificador listo en D-8',ask:'«Arma el planificador de Mejac Mes 29»'},
- 'Producción':{t:'Producción',i:'🎨',tag:'Del planificador a piezas listas para presentar.',fn:['Fila de diseño de Rocío: una cuenta a la vez (Donem → Alimor → Krat → Mejac → Ventanas → Carillon)','Imágenes y video con IA (Magnific)','Presentación de anuncios en Slides','Versiones 9:16 y carga a Drive'],out:'Piezas aprobadas en Drive en D-1',ask:'«Genera 3 variantes del AD-03 de Alimor»'},
+ 'Producción':{t:'Producción',i:'🎨',tag:'Del planificador a piezas listas para presentar.',fn:['Fila de diseño de Rocío: una cuenta a la vez (Donem → Alimor → Krat → Mejac → Ventanas → Carillon)','Imágenes y video con IA (Magnific)','Presentación de anuncios en Slides','Versiones 9:16 y carga a Drive','Sitios, landings, ecommerce e interfaces web (Agente Dev & UI Web)'],out:'Piezas aprobadas en Drive en D-1',ask:'«Genera 3 variantes del AD-03 de Alimor»'},
  Pauta:{t:'Pauta',i:'📈',tag:'Activa, optimiza y cuida las campañas en Meta y Google.',fn:['Activación en D con 3 anuncios + los con fecha','Optimización D+10: pausar, mantener, cargar','Boost IG lunes y miércoles','Alerta de piezas con fecha','Checklist de Google Ads'],out:'Propuestas en Slack que aplicas con un ✅',ask:'«¿Qué anuncios pausarías hoy en Ventanas?»'},
  Reportes:{t:'Reportes',i:'📊',tag:'Muestra a cada cliente qué logró su inversión.',fn:['Lee el reporte en tiempo real de Looker Studio que ve el cliente','Cierre de ciclo: resultados contra los objetivos y score de salud','Cruza con Noise y la Bitácora: qué cambió y por qué','Insumos para el próximo planificador y casos de éxito'],out:'Una página por cliente al cierre de mes',ask:'«Resume el mes de Donem»'},
  Ventas:{t:'Ventas',i:'🤝',tag:'Cotiza rápido, propone bien y hace seguimiento.',fn:['Cotizaciones desde la plantilla en minutos','Registro de cada cotización en Notion','Propuestas para leads desde el modelo','Seguimiento de propuestas abiertas','Leads del CDN en Noise'],out:'Cotización o propuesta como borrador listo para enviar',ask:'«Cotiza 8 anuncios Meta para Kinebaric»'},
@@ -181,10 +182,12 @@ function renderView(d){
   $('close').onclick=()=>openView(view);
   if(jump){jump=false;d.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})}
 }
+/* Agentes dentro de una célula: filas de Notion con Tipo «Agente». Se suman a los de TEAM. */
+const agentesDe=c=>CEL.filter(r=>r.Tipo==='Agente'&&r['Célula']===c).map(r=>'Agente '+(r.Nombre||'')+(r.Estado&&r.Estado!=='Activa'?' ('+r.Estado.toLowerCase()+')':''));
 function fichaHTML(c,it){const f=FICHA[c];if(!f)return'';const auts=CEL.filter(r=>r.Tipo==='Automatización'&&r['Célula']===c);
   return `<div class="ficha"><div class="f-media">${mediaHTML(c,1)}<span class="pfs">${(USES[c]||[]).map(k=>{const p=PLAT.find(x=>x.k===k);return `<span class="pfb" style="background:${p.c}">${esc(p.n)}</span>`}).join('')}</span></div>
   <div class="f-body"><p class="f-tag">${esc(f.tag)}</p><h3>Lo que hace</h3><ul class="f-fn">${f.fn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
-  <div class="f-meta"><div><span class="eyebrow">Entrega</span><b>${esc(f.out)}</b></div><div><span class="eyebrow">Agentes de IA</span><b>${(TEAM[c]||[[],[]])[0].map(esc).join(' · ')}</b></div><div><span class="eyebrow">Personas</span><b>${(TEAM[c]||[[],[]])[1].map(esc).join(' · ')}</b></div></div>
+  <div class="f-meta"><div><span class="eyebrow">Entrega</span><b>${esc(f.out)}</b></div><div><span class="eyebrow">Agentes de IA</span><b>${[...(TEAM[c]||[[],[]])[0],...agentesDe(c)].map(esc).join(' · ')}</b></div><div><span class="eyebrow">Personas</span><b>${(TEAM[c]||[[],[]])[1].map(esc).join(' · ')}</b></div></div>
   <div class="f-ask"><span class="eyebrow">Pídele, por ejemplo</span>${esc(f.ask)}</div></div></div>`}
 function renderDetail(cells){
   const d=$('detail');
